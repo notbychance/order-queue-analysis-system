@@ -38,3 +38,9 @@ server/data/*.sqlite3
 # Logs
 logs/
 *.log
+
+# Misc
+*.zip
+*.tar.gz
+*.bak
+*.tmp

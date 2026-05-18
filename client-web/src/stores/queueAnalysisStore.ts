@@ -158,9 +158,11 @@ export const useQueueAnalysisStore = defineStore('queue-analysis', {
 
       this.history = normalizeHistoryItems(nextHistory)
 
-      if (this.history.length > 0) {
-        this.lastRequest = this.history[0].request
-        this.lastResult = this.history[0].response
+      const latestItem = this.history[0] ?? null
+
+      if (latestItem) {
+        this.lastRequest = latestItem.request
+        this.lastResult = latestItem.response
       } else {
         this.lastRequest = null
         this.lastResult = null

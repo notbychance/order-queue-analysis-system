@@ -156,7 +156,7 @@ const samplePoints = computed(() => {
 
   return indexes
     .map((index) => points.value[index])
-    .filter(Boolean)
+    .filter((point): point is ChartPoint => point !== undefined)
     .map((point) => ({
       lambdaRate: formatNumber(point.lambdaRate),
       value: formatNumber(point.value),

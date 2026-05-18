@@ -86,8 +86,8 @@ function normalizePayloadToItems(payload: unknown): QueueHistoryItem[] {
 function createHistoryFileName(date = new Date()): string {
   const timestamp = date
     .toISOString()
-    .replaceAll(':', '-')
-    .replaceAll('.', '-')
+    .replace(/:/g, '-')
+    .replace(/\./g, '-')
 
   return `queue-analysis-history-${timestamp}.json`
 }
