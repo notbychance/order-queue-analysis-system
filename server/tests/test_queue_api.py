@@ -33,9 +33,15 @@ def test_analyze_queue_endpoint_returns_expected_result() -> None:
     data = response.json()
     assert data["is_stable"] is True
     assert data["rho"] == pytest.approx(0.75)
+    assert data["utilization_percent"] == pytest.approx(75.0)
     assert data["average_orders_in_system"] == pytest.approx(3.0)
     assert data["average_waiting_time"] == pytest.approx(0.375)
     assert data["average_time_in_system"] == pytest.approx(0.5)
+    assert data["average_waiting_time_hours"] == pytest.approx(9.0)
+    assert data["average_time_in_system_hours"] == pytest.approx(12.0)
+    assert data["rate_unit_label"] == "заказов/день"
+    assert data["time_unit_label"] == "дней"
+    assert "Система работает устойчиво" in data["conclusion"]
 
 
 def test_analyze_queue_endpoint_returns_unstable_result() -> None:
@@ -48,9 +54,13 @@ def test_analyze_queue_endpoint_returns_unstable_result() -> None:
     data = response.json()
     assert data["is_stable"] is False
     assert data["rho"] == pytest.approx(1.0)
+    assert data["utilization_percent"] == pytest.approx(100.0)
     assert data["average_orders_in_system"] is None
     assert data["average_waiting_time"] is None
     assert data["average_time_in_system"] is None
+    assert data["average_waiting_time_hours"] is None
+    assert data["average_time_in_system_hours"] is None
+    assert "Система неустойчива" in data["conclusion"]
 
 
 def test_analyze_queue_endpoint_rejects_negative_lambda_rate() -> None:

@@ -15,10 +15,30 @@ class QueueAnalysisRequest(BaseModel):
 
 
 class QueueAnalysisResponse(BaseModel):
-    lambda_rate: float
-    mu_rate: float
+    lambda_rate: float = Field(description="Интенсивность поступления заказов, λ")
+    mu_rate: float = Field(description="Интенсивность обслуживания заказов, μ")
+
+    rate_unit: str = Field(
+        default="orders_per_day",
+        description="Единица измерения интенсивностей",
+    )
+    rate_unit_label: str = Field(
+        default="заказов/день",
+        description="Человекочитаемая единица измерения интенсивностей",
+    )
+    time_unit: str = Field(
+        default="days",
+        description="Базовая единица измерения времени в расчетах",
+    )
+    time_unit_label: str = Field(
+        default="дней",
+        description="Человекочитаемая базовая единица измерения времени",
+    )
+
     rho: float = Field(description="Коэффициент загрузки клерка, ρ = λ / μ")
-    is_stable: bool
+    utilization_percent: float = Field(description="Загрузка клерка в процентах")
+    is_stable: bool = Field(description="Признак устойчивости системы: λ < μ")
+
     average_orders_in_system: float | None = Field(
         default=None,
         description="Среднее число заказов в системе, L",
@@ -31,4 +51,15 @@ class QueueAnalysisResponse(BaseModel):
         default=None,
         description="Среднее время пребывания заказа в системе, W, дней",
     )
-    message: str
+
+    average_waiting_time_hours: float | None = Field(
+        default=None,
+        description="Среднее время ожидания начала обслуживания, Wq, часов",
+    )
+    average_time_in_system_hours: float | None = Field(
+        default=None,
+        description="Среднее время пребывания заказа в системе, W, часов",
+    )
+
+    message: str = Field(description="Краткое техническое сообщение о результате расчета")
+    conclusion: str = Field(description="Человекочитаемое заключение для отображения в клиентах")
