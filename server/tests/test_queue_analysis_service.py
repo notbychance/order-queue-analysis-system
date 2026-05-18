@@ -10,15 +10,16 @@ def test_analyze_variant_17_returns_expected_values() -> None:
     result = analyze_queue(request)
 
     assert result.is_stable is True
-    assert result.rho == pytest.approx(0.75)
+    assert result.utilization == pytest.approx(0.75)
     assert result.utilization_percent == pytest.approx(75.0)
     assert result.average_orders_in_system == pytest.approx(3.0)
     assert result.average_waiting_time == pytest.approx(0.375)
     assert result.average_time_in_system == pytest.approx(0.5)
     assert result.average_waiting_time_hours == pytest.approx(9.0)
     assert result.average_time_in_system_hours == pytest.approx(12.0)
-    assert result.rate_unit_label == "заказов/день"
-    assert result.time_unit_label == "дней"
+    assert result.arrival_rate_unit == "заказов/день"
+    assert result.service_rate_unit == "заказов/день"
+    assert result.time_unit == "дней"
     assert "Система работает устойчиво" in result.conclusion
 
 
@@ -28,7 +29,7 @@ def test_analyze_zero_arrival_rate_returns_no_queue() -> None:
     result = analyze_queue(request)
 
     assert result.is_stable is True
-    assert result.rho == pytest.approx(0.0)
+    assert result.utilization == pytest.approx(0.0)
     assert result.utilization_percent == pytest.approx(0.0)
     assert result.average_orders_in_system == pytest.approx(0.0)
     assert result.average_waiting_time == pytest.approx(0.0)
@@ -43,7 +44,7 @@ def test_analyze_equal_rates_returns_unstable_system() -> None:
     result = analyze_queue(request)
 
     assert result.is_stable is False
-    assert result.rho == pytest.approx(1.0)
+    assert result.utilization == pytest.approx(1.0)
     assert result.utilization_percent == pytest.approx(100.0)
     assert result.average_orders_in_system is None
     assert result.average_waiting_time is None
@@ -59,7 +60,7 @@ def test_analyze_arrival_rate_greater_than_service_rate_returns_unstable_system(
     result = analyze_queue(request)
 
     assert result.is_stable is False
-    assert result.rho == pytest.approx(1.25)
+    assert result.utilization == pytest.approx(1.25)
     assert result.utilization_percent == pytest.approx(125.0)
     assert result.average_orders_in_system is None
     assert result.average_waiting_time is None

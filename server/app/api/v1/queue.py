@@ -44,7 +44,7 @@ def get_queue_formulas() -> QueueFormulasResponse:
         ),
         stability_condition="λ < μ",
         formulas={
-            "rho": "ρ = λ / μ",
+            "utilization": "ρ = λ / μ",
             "average_orders_in_system": "L = λ / (μ - λ)",
             "average_waiting_time": "Wq = λ / (μ * (μ - λ))",
             "average_time_in_system": "W = 1 / (μ - λ)",
