@@ -1,54 +1,191 @@
-# vue-project
+# client-web
 
-This template should help get you started developing with Vue 3 in Vite.
+Web-клиент информационной системы анализа одноканальной системы массового обслуживания.
 
-## Recommended IDE Setup
+Клиент реализован на Vue 3 и обращается к FastAPI-серверу для расчета показателей модели M/M/1. История расчетов хранится локально в браузере через Pinia и `localStorage`. Сервер историю не хранит.
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## Основные возможности
 
-## Recommended Browser Setup
+- ввод интенсивности поступления заявок `λ`;
+- ввод интенсивности обслуживания `μ`;
+- отправка параметров на FastAPI;
+- отображение результата анализа;
+- отображение формул модели M/M/1;
+- локальная история расчетов;
+- импорт и экспорт истории в JSON;
+- светлая и темная тема;
+- график зависимости показателей системы от `λ`;
+- unit-тесты компонентов, store, сервисов и утилит.
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+## Требования
 
-## Type Support for `.vue` Imports in TS
+Для локальной разработки:
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+- Node.js версии `20.19+` или `22.12+`;
+- npm.
 
-## Customize configuration
+Версии также указаны в поле `engines` файла `package.json`.
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+## Установка зависимостей
 
-## Project Setup
-
-```sh
+```bash
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+В Docker используется команда:
 
-```sh
+```bash
+npm ci
+```
+
+Она устанавливает зависимости строго по `package-lock.json`, поэтому перед сборкой Docker важно, чтобы `package.json` и `package-lock.json` были актуальными.
+
+## Переменные окружения
+
+Создай локальный файл `.env` на основе `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+Для локальной разработки через Vite обычно используется полный адрес API:
+
+```env
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+VITE_REQUEST_TIMEOUT_MS=10000
+VITE_APP_NAME=Queue Analysis Web
+```
+
+Для Docker/nginx-сборки используется относительный адрес:
+
+```env
+VITE_API_BASE_URL=/api/v1
+```
+
+В этом случае браузер обращается к тому же origin, где открыт web-клиент, а nginx проксирует `/api/...` в контейнер FastAPI.
+
+## Локальный запуск
+
+Перед запуском web-клиента должен быть запущен FastAPI-сервер на `http://localhost:8000`.
+
+```bash
 npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
+По умолчанию Vite откроет приложение на:
 
-```sh
+```text
+http://localhost:5173
+```
+
+## Сборка
+
+```bash
 npm run build
 ```
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+Скрипт выполняет проверку типов и сборку Vite.
 
-```sh
+## Preview production-сборки
+
+```bash
+npm run preview
+```
+
+## Тесты
+
+```bash
 npm run test:unit
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+Тесты запускаются через Vitest. Конфигурация находится в `vitest.config.ts`.
 
-```sh
+## Линтинг и форматирование
+
+```bash
 npm run lint
+npm run format
+```
+
+## Docker
+
+Сборка образа из папки `client-web`:
+
+```bash
+docker build -t queue-analysis-web .
+```
+
+Запуск отдельно:
+
+```bash
+docker run --rm -p 8080:80 queue-analysis-web
+```
+
+После запуска приложение будет доступно по адресу:
+
+```text
+http://localhost:8080
+```
+
+Для полноценной работы через Docker рекомендуется запускать web-клиент вместе с FastAPI через `docker-compose.yml` из корня проекта, чтобы nginx мог проксировать запросы на сервис `server`.
+
+## API
+
+Web-клиент использует endpoint-ы FastAPI:
+
+```text
+POST /api/v1/queue/analyze
+GET  /api/v1/queue/formulas
+```
+
+Endpoint `POST /api/v1/queue/analyze` принимает:
+
+```json
+{
+  "lambda_rate": 6,
+  "mu_rate": 8
+}
+```
+
+И возвращает результат анализа системы:
+
+- устойчивость системы;
+- коэффициент загрузки;
+- среднее число заявок в системе;
+- среднее время ожидания;
+- среднее время пребывания заявки в системе;
+- текстовое заключение.
+
+## CORS
+
+При локальном запуске через Vite запросы идут с origin `http://localhost:5173`. На стороне FastAPI для разработки должен быть включен режим:
+
+```env
+APP_ENV=development
+```
+
+В этом режиме сервер пропускает origins для разработки.
+
+В Docker/nginx-сценарии web-клиент обращается к API через относительный путь `/api/v1`, поэтому запросы идут на тот же origin, а nginx проксирует их в FastAPI. Это снижает необходимость в CORS для браузера при publish-запуске.
+
+## Структура
+
+```text
+client-web/
+├── src/
+│   ├── api/          # axios-клиент и API-методы
+│   ├── assets/       # CSS и темы
+│   ├── components/   # Vue-компоненты
+│   ├── config/       # чтение Vite env
+│   ├── router/       # маршруты Vue Router
+│   ├── services/     # сервисы, например импорт/экспорт истории
+│   ├── stores/       # Pinia-store
+│   ├── types/        # TypeScript-типы DTO
+│   ├── utils/        # утилиты форматирования
+│   └── views/        # страницы приложения
+├── Dockerfile
+├── nginx.conf
+├── .dockerignore
+├── package.json
+└── package-lock.json
 ```
