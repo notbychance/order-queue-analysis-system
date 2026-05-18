@@ -1,0 +1,61 @@
+name: order-queue-analysis-system-prod
+
+services:
+  server:
+    image: ${GHCR_IMAGE_PREFIX:?Set GHCR_IMAGE_PREFIX, for example ghcr.io/owner/repository}/queue-analysis-server:${APP_VERSION:-latest}
+    container_name: queue-analysis-server
+    environment:
+      APP_NAME: ${SERVER_APP_NAME:-Queue Analysis API}
+      APP_ENV: ${SERVER_APP_ENV:-publish}
+      DEBUG: ${SERVER_DEBUG:-false}
+      API_PREFIX: ${SERVER_API_PREFIX:-/api/v1}
+      CORS_ORIGINS: ${SERVER_CORS_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080}
+      CORS_ALLOW_CREDENTIALS: ${SERVER_CORS_ALLOW_CREDENTIALS:-false}
+      LOG_LEVEL: ${SERVER_LOG_LEVEL:-INFO}
+    ports:
+      - "${SERVER_PORT:-8000}:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - queue-analysis-network
+    restart: unless-stopped
+
+  client-web:
+    image: ${GHCR_IMAGE_PREFIX:?Set GHCR_IMAGE_PREFIX, for example ghcr.io/owner/repository}/queue-analysis-web:${APP_VERSION:-latest}
+    container_name: queue-analysis-web
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      server:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost/",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - queue-analysis-network
+    restart: unless-stopped
+
+networks:
+  queue-analysis-network:
+    driver: bridge

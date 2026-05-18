@@ -13,6 +13,26 @@ order queue analysis system/
 └── docker-compose.yml
 ```
 
+## Быстрый старт
+
+```bash
+docker compose up --build
+```
+
+После запуска:
+
+```text
+Web:     http://localhost:8080
+FastAPI: http://localhost:8000
+Swagger: http://localhost:8000/docs
+```
+
+Полная инструкция по использованию:
+
+```text
+docs/USAGE.md
+```
+
 ## Архитектура
 
 ```text
@@ -32,66 +52,16 @@ server
 
 Глобальной БД на сервере нет. История расчетов хранится только на стороне клиентов.
 
-## Быстрый запуск через Docker
-
-Из корня проекта:
-
-```bash
-docker compose up --build
-```
-
-После запуска:
+## Документация
 
 ```text
-Web:     http://localhost:8080
-FastAPI: http://localhost:8000
-Swagger: http://localhost:8000/docs
-```
-
-Подробнее: [`docs/DOCKER.md`](docs/DOCKER.md).
-
-## Тесты через Docker
-
-```bash
-docker compose --profile test up --build --abort-on-container-exit
-```
-
-Или по отдельности:
-
-```bash
-docker compose --profile test run --rm server-tests
-docker compose --profile test run --rm client-web-tests
-docker compose --profile test run --rm client-desktop-tests
-```
-
-## Локальный запуск
-
-### Server
-
-```bash
-cd server
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
-
-### Web
-
-```bash
-cd client-web
-npm install
-npm run dev
-```
-
-### Desktop
-
-```bash
-cd client-desktop
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -r requirements-dev.txt
-python -m app.main
+docs/USAGE.md              инструкция по использованию
+docs/API_CONTRACT.md       API-контракт
+docs/DOCKER.md             Docker-запуск
+docs/DOCKER_PUBLISHING.md  публикация Docker images в GHCR
+docs/INTEGRATION_TESTS.md  интеграционные тесты
+docs/CI.md                 CI
+docs/RELEASE_WORKFLOW.md   GitHub Release workflow
 ```
 
 ## API
@@ -104,8 +74,6 @@ GET  /api/v1/queue/formulas
 
 Endpoint `/api/v1/queue/default` не используется.
 
-Актуальный контракт: [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md).
-
 ## История расчетов
 
 ```text
@@ -114,15 +82,8 @@ client-web     localStorage
 client-desktop SQLite
 ```
 
-## Desktop EXE
+## Тесты через Docker
 
-```powershell
-cd client-desktop
-.\scripts\build_exe.ps1
-```
-
-Результат:
-
-```text
-client-desktop/dist/QueueAnalysisDesktop/QueueAnalysisDesktop.exe
+```bash
+docker compose --profile test up --build --abort-on-container-exit
 ```

@@ -1,0 +1,123 @@
+name: Docker Publish
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Docker image tag, for example v1.0.0"
+        required: true
+        type: string
+      push_latest:
+        description: "Also publish latest tag"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: docker-publish-${{ github.ref_name || inputs.image_tag }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  publish:
+    name: Publish Docker images to GHCR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Resolve image variables
+        id: vars
+        shell: bash
+        run: |
+          REPOSITORY_LOWERCASE="$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            IMAGE_TAG="${{ inputs.image_tag }}"
+            PUSH_LATEST="${{ inputs.push_latest }}"
+          else
+            IMAGE_TAG="${GITHUB_REF_NAME}"
+            PUSH_LATEST="true"
+          fi
+
+          echo "repository_lowercase=${REPOSITORY_LOWERCASE}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "push_latest=${PUSH_LATEST}" >> "$GITHUB_OUTPUT"
+
+          echo "server_image=${{ env.REGISTRY }}/${REPOSITORY_LOWERCASE}/queue-analysis-server" >> "$GITHUB_OUTPUT"
+          echo "web_image=${{ env.REGISTRY }}/${REPOSITORY_LOWERCASE}/queue-analysis-web" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish server image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./server
+          file: ./server/Dockerfile
+          target: runtime
+          push: true
+          tags: |
+            ${{ steps.vars.outputs.server_image }}:${{ steps.vars.outputs.image_tag }}
+            ${{ steps.vars.outputs.server_image }}:sha-${{ github.sha }}
+            ${{ steps.vars.outputs.push_latest == 'true' && format('{0}:latest', steps.vars.outputs.server_image) || '' }}
+          labels: |
+            org.opencontainers.image.title=Queue Analysis API
+            org.opencontainers.image.description=FastAPI server for M/M/1 queue analysis
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.vars.outputs.image_tag }}
+          cache-from: type=gha,scope=server
+          cache-to: type=gha,mode=max,scope=server
+
+      - name: Build and publish web image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./client-web
+          file: ./client-web/Dockerfile
+          push: true
+          build-args: |
+            VITE_API_BASE_URL=/api/v1
+            VITE_REQUEST_TIMEOUT_MS=10000
+            VITE_APP_NAME=Queue Analysis Web
+          tags: |
+            ${{ steps.vars.outputs.web_image }}:${{ steps.vars.outputs.image_tag }}
+            ${{ steps.vars.outputs.web_image }}:sha-${{ github.sha }}
+            ${{ steps.vars.outputs.push_latest == 'true' && format('{0}:latest', steps.vars.outputs.web_image) || '' }}
+          labels: |
+            org.opencontainers.image.title=Queue Analysis Web
+            org.opencontainers.image.description=Vue web client for M/M/1 queue analysis
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.vars.outputs.image_tag }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+      - name: Print published images
+        shell: bash
+        run: |
+          echo "Published images:"
+          echo "${{ steps.vars.outputs.server_image }}:${{ steps.vars.outputs.image_tag }}"
+          echo "${{ steps.vars.outputs.web_image }}:${{ steps.vars.outputs.image_tag }}"
+
+          if [ "${{ steps.vars.outputs.push_latest }}" = "true" ]; then
+            echo "${{ steps.vars.outputs.server_image }}:latest"
+            echo "${{ steps.vars.outputs.web_image }}:latest"
+          fi

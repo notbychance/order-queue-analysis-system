@@ -76,6 +76,27 @@ queue-analysis-web-dist.zip
 QueueAnalysisDesktop-windows.zip
 ```
 
+## Docker images
+
+Docker images are published by a separate workflow:
+
+```text
+.github/workflows/docker-publish.yml
+```
+
+Documentation:
+
+```text
+docs/DOCKER_PUBLISHING.md
+```
+
+Published images:
+
+```text
+ghcr.io/<owner>/<repository>/queue-analysis-server:<tag>
+ghcr.io/<owner>/<repository>/queue-analysis-web:<tag>
+```
+
 ## Important
 
 If a release with the same tag already exists, GitHub CLI will fail the release creation step. Delete the old release or use a new tag.
