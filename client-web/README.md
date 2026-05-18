@@ -1,54 +1,66 @@
-# client-web
+# Queue Analysis Web Client
 
-Web-клиент информационной системы анализа одноканальной системы массового обслуживания.
+Web-клиент системы анализа одноканальной системы массового обслуживания **M/M/1**.
 
-Клиент реализован на Vue 3 и обращается к FastAPI-серверу для расчета показателей модели M/M/1. История расчетов хранится локально в браузере через Pinia и `localStorage`. Сервер историю не хранит.
+Клиент реализован на **Vue 3 + Vite + TypeScript** и обращается к FastAPI-серверу для расчета показателей. История расчетов хранится локально в браузере через **Pinia + localStorage**.
+
+Сервер историю не хранит.
 
 ## Основные возможности
 
-- ввод интенсивности поступления заявок `λ`;
+- ввод интенсивности поступления заказов `λ`;
 - ввод интенсивности обслуживания `μ`;
-- отправка параметров на FastAPI;
+- расчет через FastAPI;
 - отображение результата анализа;
 - отображение формул модели M/M/1;
 - локальная история расчетов;
-- импорт и экспорт истории в JSON;
+- повтор расчета из истории;
+- удаление и очистка истории;
+- импорт/экспорт истории в JSON;
 - светлая и темная тема;
-- график зависимости показателей системы от `λ`;
-- unit-тесты компонентов, store, сервисов и утилит.
+- SVG-графики чувствительности системы;
+- unit-тесты компонентов, stores, сервисов и утилит.
+
+## Стек
+
+- Vue 3
+- Vite
+- TypeScript
+- Vue Router
+- Pinia
+- pinia-plugin-persistedstate
+- Axios
+- Naive UI
+- Vitest
+- Vue Test Utils
 
 ## Требования
 
-Для локальной разработки:
-
-- Node.js версии `20.19+` или `22.12+`;
+- Node.js `20.19+` или `22.12+`;
 - npm.
 
-Версии также указаны в поле `engines` файла `package.json`.
+Версии указаны в `package.json`.
 
-## Установка зависимостей
+## Установка
 
 ```bash
+cd client-web
 npm install
 ```
 
-В Docker используется команда:
+В Docker используется:
 
 ```bash
 npm ci
 ```
 
-Она устанавливает зависимости строго по `package-lock.json`, поэтому перед сборкой Docker важно, чтобы `package.json` и `package-lock.json` были актуальными.
+Поэтому `package.json` и `package-lock.json` должны быть актуальными.
 
 ## Переменные окружения
 
-Создай локальный файл `.env` на основе `.env.example`:
+Создай локальный `.env` на основе `.env.example`.
 
-```bash
-cp .env.example .env
-```
-
-Для локальной разработки через Vite обычно используется полный адрес API:
+Для локальной разработки через Vite:
 
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api/v1
@@ -56,23 +68,31 @@ VITE_REQUEST_TIMEOUT_MS=10000
 VITE_APP_NAME=Queue Analysis Web
 ```
 
-Для Docker/nginx-сборки используется относительный адрес:
+Для Docker/nginx-сборки:
 
 ```env
 VITE_API_BASE_URL=/api/v1
 ```
 
-В этом случае браузер обращается к тому же origin, где открыт web-клиент, а nginx проксирует `/api/...` в контейнер FastAPI.
+В этом режиме nginx проксирует `/api/...` в FastAPI.
 
 ## Локальный запуск
 
-Перед запуском web-клиента должен быть запущен FastAPI-сервер на `http://localhost:8000`.
+Сначала запусти FastAPI-сервер:
 
 ```bash
+cd server
+uvicorn app.main:app --reload
+```
+
+Потом web-клиент:
+
+```bash
+cd client-web
 npm run dev
 ```
 
-По умолчанию Vite откроет приложение на:
+Адрес Vite:
 
 ```text
 http://localhost:5173
@@ -84,12 +104,13 @@ http://localhost:5173
 npm run build
 ```
 
-Скрипт выполняет проверку типов и сборку Vite.
+Скрипт выполняет type-check и production-сборку.
 
-## Preview production-сборки
+Отдельно:
 
 ```bash
-npm run preview
+npm run type-check
+npm run build-only
 ```
 
 ## Тесты
@@ -97,8 +118,6 @@ npm run preview
 ```bash
 npm run test:unit
 ```
-
-Тесты запускаются через Vitest. Конфигурация находится в `vitest.config.ts`.
 
 ## Линтинг и форматирование
 
@@ -121,24 +140,24 @@ docker build -t queue-analysis-web .
 docker run --rm -p 8080:80 queue-analysis-web
 ```
 
-После запуска приложение будет доступно по адресу:
+Адрес:
 
 ```text
 http://localhost:8080
 ```
 
-Для полноценной работы через Docker рекомендуется запускать web-клиент вместе с FastAPI через `docker-compose.yml` из корня проекта, чтобы nginx мог проксировать запросы на сервис `server`.
+Для полноценной работы web-клиент должен запускаться вместе с FastAPI, чтобы nginx мог проксировать API-запросы на сервис `server`.
 
 ## API
 
-Web-клиент использует endpoint-ы FastAPI:
+Web-клиент использует:
 
 ```text
 POST /api/v1/queue/analyze
 GET  /api/v1/queue/formulas
 ```
 
-Endpoint `POST /api/v1/queue/analyze` принимает:
+### Request DTO
 
 ```json
 {
@@ -147,26 +166,44 @@ Endpoint `POST /api/v1/queue/analyze` принимает:
 }
 ```
 
-И возвращает результат анализа системы:
+### Response DTO
 
-- устойчивость системы;
-- коэффициент загрузки;
-- среднее число заявок в системе;
-- среднее время ожидания;
-- среднее время пребывания заявки в системе;
-- текстовое заключение.
+```json
+{
+  "lambda_rate": 6.0,
+  "mu_rate": 8.0,
+  "arrival_rate_unit": "заказов/день",
+  "service_rate_unit": "заказов/день",
+  "time_unit": "дней",
+  "is_stable": true,
+  "utilization": 0.75,
+  "utilization_percent": 75.0,
+  "average_orders_in_system": 3.0,
+  "average_waiting_time": 0.375,
+  "average_waiting_time_hours": 9.0,
+  "average_time_in_system": 0.5,
+  "average_time_in_system_hours": 12.0,
+  "conclusion": "Система устойчива. Клерк загружен на 75.0%. Очередь не растет неограниченно."
+}
+```
+
+Важно: web-клиент ожидает поле `utilization`, а не старое поле `rho`.
 
 ## CORS
 
-При локальном запуске через Vite запросы идут с origin `http://localhost:5173`. На стороне FastAPI для разработки должен быть включен режим:
+При локальном запуске Vite использует origin:
+
+```text
+http://localhost:5173
+```
+
+На сервере для разработки должен быть включен:
 
 ```env
 APP_ENV=development
 ```
 
-В этом режиме сервер пропускает origins для разработки.
-
-В Docker/nginx-сценарии web-клиент обращается к API через относительный путь `/api/v1`, поэтому запросы идут на тот же origin, а nginx проксирует их в FastAPI. Это снижает необходимость в CORS для браузера при publish-запуске.
+В Docker/nginx-сценарии web-клиент обращается к API через относительный путь `/api/v1`, поэтому запросы идут на тот же origin.
 
 ## Структура
 
@@ -176,16 +213,33 @@ client-web/
 │   ├── api/          # axios-клиент и API-методы
 │   ├── assets/       # CSS и темы
 │   ├── components/   # Vue-компоненты
-│   ├── config/       # чтение Vite env
-│   ├── router/       # маршруты Vue Router
-│   ├── services/     # сервисы, например импорт/экспорт истории
+│   ├── config/       # Vite env
+│   ├── router/       # маршруты
+│   ├── services/     # импорт/экспорт истории
 │   ├── stores/       # Pinia-store
-│   ├── types/        # TypeScript-типы DTO
-│   ├── utils/        # утилиты форматирования
-│   └── views/        # страницы приложения
+│   ├── types/        # TypeScript DTO
+│   ├── utils/        # форматирование
+│   └── views/        # страницы
+├── tests/
 ├── Dockerfile
 ├── nginx.conf
-├── .dockerignore
 ├── package.json
-└── package-lock.json
+├── package-lock.json
+├── vite.config.ts
+├── vitest.config.ts
+└── README.md
 ```
+
+## Локальная история
+
+История хранится только в браузере пользователя.
+
+Сохраняются:
+
+- дата расчета;
+- параметры `λ` и `μ`;
+- полный ответ сервера;
+- статус устойчивости;
+- расчетные показатели.
+
+Историю можно экспортировать в JSON и импортировать обратно.

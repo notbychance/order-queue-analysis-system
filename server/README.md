@@ -1,34 +1,37 @@
 # Queue Analysis API
 
-FastAPI-сервер для курсовой работы по анализу одноканальной системы массового обслуживания M/M/1.
+FastAPI-сервер для анализа одноканальной системы массового обслуживания **M/M/1**.
 
-Сервер принимает параметры системы, выполняет расчет характеристик и возвращает результат через REST API. Сервер не хранит историю расчетов: история ведется локально на стороне клиентов.
+Сервер принимает параметры системы, выполняет расчет характеристик и возвращает результат через REST API.
+
+Сервер **не хранит историю расчетов**. История хранится локально на стороне клиентов:
+
+```text
+client-web     → Pinia/localStorage
+client-desktop → SQLite через SQLAlchemy ORM
+```
 
 ## Основные возможности
 
-- анализ системы массового обслуживания M/M/1;
-- расчет коэффициента загрузки клерка;
-- расчет среднего числа заказов в системе;
-- расчет среднего времени ожидания начала обработки;
-- расчет среднего времени пребывания заказа в системе;
+- расчет характеристик модели M/M/1;
 - проверка устойчивости системы по условию `λ < μ`;
-- получение справки по используемым формулам;
-- настройка CORS для режимов разработки и публикации.
+- расчет коэффициента загрузки `utilization`;
+- расчет среднего числа заказов в системе `L`;
+- расчет среднего времени ожидания `Wq`;
+- расчет среднего времени пребывания в системе `W`;
+- перевод времени из дней в часы;
+- получение справки по формулам модели;
+- CORS-режимы для development и publish.
 
 ## Структура серверного модуля
 
 ```text
 server/
 ├── app/
-│   ├── api/
-│   │   └── v1/
-│   │       └── queue.py
-│   ├── core/
-│   │   └── config.py
-│   ├── schemas/
-│   │   └── queue.py
-│   ├── services/
-│   │   └── queue_analysis.py
+│   ├── api/v1/queue.py
+│   ├── core/config.py
+│   ├── schemas/queue.py
+│   ├── services/queue_analysis.py
 │   └── main.py
 ├── tests/
 ├── .env.example
@@ -41,33 +44,36 @@ server/
 
 ## Переменные окружения
 
-Создай локальный файл `.env` на основе `.env.example`:
+Создай локальный `.env`:
 
 ```bash
 cp .env.example .env
 ```
 
-Для Windows PowerShell:
+Windows PowerShell:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Пример локальной конфигурации:
+Пример:
 
 ```env
 APP_NAME=Queue Analysis API
 APP_ENV=development
 DEBUG=true
+
 API_PREFIX=/api/v1
+
 CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080
 CORS_ALLOW_CREDENTIALS=false
+
 LOG_LEVEL=INFO
 ```
 
-### Режимы CORS
+## CORS
 
-В режиме разработки:
+В development-режиме:
 
 ```env
 APP_ENV=development
@@ -75,20 +81,19 @@ APP_ENV=development
 
 сервер разрешает запросы со всех origins.
 
-В режиме публикации:
+В publish-режиме:
 
 ```env
 APP_ENV=publish
 CORS_ORIGINS=https://example.com,https://www.example.com
 ```
 
-сервер разрешает запросы только с адресов, указанных в `CORS_ORIGINS`.
+сервер разрешает запросы только с адресов из `CORS_ORIGINS`.
 
 ## Локальный запуск
 
-Создай и активируй виртуальное окружение:
-
 ```bash
+cd server
 python -m venv .venv
 ```
 
@@ -98,41 +103,36 @@ Windows PowerShell:
 .venv\Scripts\Activate.ps1
 ```
 
-Linux/macOS:
-
-```bash
-source .venv/bin/activate
-```
-
-Установи зависимости:
+Установка зависимостей:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Запусти сервер:
+Запуск:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-После запуска доступны:
+Проверка:
 
 ```text
-API:     http://localhost:8000
-Swagger: http://localhost:8000/docs
-Health:  http://localhost:8000/health
+http://localhost:8000/health
+http://localhost:8000/docs
 ```
 
 ## API endpoint-ы
 
-### Проверка состояния сервера
-
-```http
-GET /health
+```text
+GET  /health
+POST /api/v1/queue/analyze
+GET  /api/v1/queue/formulas
 ```
 
-Пример ответа:
+Endpoint `/api/v1/queue/default` не используется.
+
+### GET /health
 
 ```json
 {
@@ -142,19 +142,18 @@ GET /health
 }
 ```
 
-### Анализ системы
+### POST /api/v1/queue/analyze
 
-```http
-POST /api/v1/queue/analyze
-Content-Type: application/json
+Запрос:
 
+```json
 {
   "lambda_rate": 6,
   "mu_rate": 8
 }
 ```
 
-Пример ответа:
+Ответ:
 
 ```json
 {
@@ -175,46 +174,57 @@ Content-Type: application/json
 }
 ```
 
-### Формулы модели
+Для неустойчивой системы `average_*` поля возвращаются как `null`.
 
-```http
-GET /api/v1/queue/formulas
+### GET /api/v1/queue/formulas
+
+```json
+{
+  "model_name": "M/M/1",
+  "description": "Одноканальная система массового обслуживания с пуассоновским потоком заявок и экспоненциальным временем обслуживания.",
+  "stability_condition": "λ < μ",
+  "formulas": {
+    "utilization": "ρ = λ / μ",
+    "average_orders_in_system": "L = λ / (μ - λ)",
+    "average_waiting_time": "Wq = λ / (μ * (μ - λ))",
+    "average_time_in_system": "W = 1 / (μ - λ)"
+  }
+}
 ```
-
-Возвращает название модели, условие устойчивости и формулы расчета.
 
 ## Тестирование
 
-Запуск всех тестов:
-
 ```bash
+cd server
 pytest
 ```
 
-Запуск с отчетом покрытия:
+Тесты покрывают:
 
-```bash
-pytest --cov=app --cov-report=term-missing
-```
-
-Тесты включают:
-
-- unit-тесты расчетного сервиса;
-- API-тесты FastAPI endpoint-ов;
-- тесты конфигурации CORS.
+- расчетный сервис;
+- FastAPI endpoint-ы;
+- CORS-конфигурацию;
+- актуальный контракт ответа для клиентов.
 
 ## Docker
 
-Сборка образа из папки `server`:
+Сборка из папки `server`:
 
 ```bash
 docker build -t queue-analysis-server .
 ```
 
-Запуск контейнера:
+Запуск:
 
 ```bash
 docker run --rm -p 8000:8000 --env-file .env queue-analysis-server
 ```
 
-При запуске через `docker compose` из корня проекта сервер использует тот же `.env` файл, если он подключен в `docker-compose.yml` через `env_file`.
+При запуске через `docker compose` из корня проекта сервер использует `server/.env`.
+
+## Важные ограничения
+
+- Сервер не хранит историю расчетов.
+- Сервер не использует глобальную БД.
+- Сервер не отвечает за UI.
+- Серверный контракт должен совпадать с DTO web- и desktop-клиентов.

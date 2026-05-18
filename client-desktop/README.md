@@ -1,6 +1,10 @@
-# Queue Analysis Desktop
+# Queue Analysis Desktop Client
 
-Desktop-клиент клиент-серверной системы анализа одноканальной системы массового обслуживания.
+Desktop-клиент системы анализа одноканальной системы массового обслуживания **M/M/1**.
+
+Клиент реализован на **PySide6 + QML / Qt Quick**. Расчет выполняется на FastAPI-сервере, а история расчетов хранится локально в SQLite через **SQLAlchemy ORM**.
+
+Сервер историю не хранит.
 
 ## Стек
 
@@ -11,9 +15,24 @@ Desktop-клиент клиент-серверной системы анализ
 - SQLAlchemy ORM
 - SQLite
 - pytest
+- pytest-qt
+- respx
 - PyInstaller
 
-FastAPI-сервер выполняет расчет модели M/M/1, а desktop-клиент сохраняет историю локально в SQLite. Глобальная БД на сервере не используется.
+## Основные возможности
+
+- ввод интенсивности поступления заказов `λ`;
+- ввод интенсивности обслуживания `μ`;
+- расчет через FastAPI;
+- отображение результатов анализа;
+- график чувствительности;
+- локальная история расчетов в SQLite;
+- повтор расчета из истории;
+- удаление и очистка истории;
+- импорт/экспорт истории в JSON;
+- светлая/темная/system-тема;
+- сохранение темы через QSettings;
+- сборка Windows `.exe`.
 
 ## Структура модуля
 
@@ -21,10 +40,10 @@ FastAPI-сервер выполняет расчет модели M/M/1, а desk
 client-desktop/
 ├── app/
 │   ├── api/                 # HTTP-клиент FastAPI
-│   ├── core/                # настройки .env
+│   ├── core/                # чтение .env
 │   ├── data/                # SQLAlchemy, ORM-модели, репозитории
 │   ├── schemas/             # Pydantic DTO
-│   ├── services/            # сервисы истории
+│   ├── services/            # сервисы истории и JSON-файлов
 │   ├── ui/qml/              # QML-интерфейс
 │   ├── viewmodels/          # ViewModel для QML
 │   └── main.py
@@ -35,7 +54,8 @@ client-desktop/
 ├── pytest.ini
 ├── Dockerfile
 ├── .dockerignore
-└── QueueAnalysisDesktop.spec
+├── QueueAnalysisDesktop.spec
+└── README.md
 ```
 
 ## Локальный запуск
@@ -62,12 +82,6 @@ uvicorn app.main:app --reload
 ```powershell
 cd client-desktop
 python -m app.main
-```
-
-По умолчанию desktop-клиент обращается к API:
-
-```text
-http://localhost:8000/api/v1
 ```
 
 ## Настройки
@@ -98,6 +112,24 @@ THEME=system
 
 `.env.example` можно хранить в Git, `.env` обычно не коммитится.
 
+## API-контракт
+
+Desktop-клиент использует:
+
+```text
+POST /api/v1/queue/analyze
+GET  /api/v1/queue/formulas
+GET  /health
+```
+
+DTO ответа анализа должен содержать поле:
+
+```text
+utilization
+```
+
+Старое поле `rho` не используется.
+
 ## Локальная история
 
 История расчетов хранится только на стороне desktop-клиента.
@@ -108,7 +140,21 @@ THEME=system
 client-desktop/data/history.sqlite3
 ```
 
-Сервер FastAPI историю не хранит.
+Для собранного `.exe` относительный путь считается от папки рядом с `QueueAnalysisDesktop.exe`.
+
+## Импорт и экспорт истории
+
+История экспортируется в JSON:
+
+```json
+{
+  "version": 1,
+  "exported_at": "...",
+  "items": []
+}
+```
+
+При импорте дубликаты по `id` пропускаются.
 
 ## Тесты
 
@@ -117,34 +163,40 @@ cd client-desktop
 pytest
 ```
 
+Тесты покрывают:
+
+- settings;
+- SQLAlchemy connection manager;
+- ORM-модель истории;
+- repository;
+- service;
+- API-клиент;
+- ViewModel анализа;
+- ViewModel истории;
+- ViewModel формул;
+- ViewModel темы;
+- импорт/экспорт истории.
+
 ## Docker
 
-Dockerfile для desktop-модуля предназначен в первую очередь для проверки тестов и зависимостей в изолированной Linux-среде.
+Dockerfile desktop-модуля предназначен для проверки тестов и зависимостей в изолированной Linux-среде.
 
-Собрать образ:
+Сборка:
 
 ```bash
 cd client-desktop
 docker build -t queue-analysis-desktop .
 ```
 
-Запустить тесты:
+Запуск тестов:
 
 ```bash
 docker run --rm queue-analysis-desktop
 ```
 
-Или явно:
-
-```bash
-docker run --rm queue-analysis-desktop pytest
-```
-
-Полноценный запуск GUI-приложения из Docker не является основным сценарием, потому что PySide6/QML требует графического окружения. Для разработки и защиты курсовой desktop-клиент запускается локально на Windows, а Docker используется для проверки сборки зависимостей и тестов.
+Полноценный запуск GUI из Docker не является основным сценарием, потому что PySide6/QML требует графического окружения.
 
 ## Сборка EXE
-
-Для сборки используется PyInstaller.
 
 PowerShell:
 
@@ -166,16 +218,17 @@ scripts\build_exe.bat
 client-desktop/dist/QueueAnalysisDesktop/QueueAnalysisDesktop.exe
 ```
 
-После сборки `.env` можно положить рядом с `QueueAnalysisDesktop.exe`, если нужно изменить `API_BASE_URL`, путь SQLite-БД или тему без пересборки.
+После сборки `.env` можно положить рядом с `QueueAnalysisDesktop.exe`, если нужно изменить:
 
-## Основные функции
+- `API_BASE_URL`;
+- путь SQLite-БД;
+- тему;
+- лимит истории.
 
-- ввод интенсивности поступления заказов `λ`;
-- ввод интенсивности обслуживания `μ`;
-- отправка параметров на FastAPI;
-- отображение результатов анализа;
-- график чувствительности;
-- локальная история расчетов в SQLite;
-- импорт/экспорт истории в JSON;
-- светлая/темная/system-тема;
-- сборка Windows `.exe`.
+## Важные ограничения
+
+- Desktop-клиент не рассчитывает модель самостоятельно.
+- Расчет выполняется на FastAPI-сервере.
+- История хранится локально в SQLite.
+- Глобальная БД на сервере не используется.
+- QML не обращается напрямую к API или БД: для этого используются ViewModel и сервисы.
