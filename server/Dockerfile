@@ -1,4 +1,4 @@
-FROM python:3.14-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -13,6 +13,8 @@ RUN pip install --upgrade pip \
     && pip install -r requirements.txt
 
 COPY app ./app
+COPY tests ./tests
+COPY pytest.ini ./pytest.ini
 
 RUN groupadd --system appuser \
     && useradd --system --gid appuser --home-dir /app appuser \

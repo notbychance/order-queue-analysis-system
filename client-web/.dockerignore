@@ -31,6 +31,13 @@ src/**/*.test.ts
 src/**/__tests__/
 tests/
 
+# Temporary archives
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+
 # IDE / OS
 .vscode/
 .idea/
