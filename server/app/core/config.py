@@ -31,11 +31,6 @@ class Settings(BaseSettings):
         )
     )
 
-    database_url: str = Field(default="sqlite:///./data/queue_analysis.db")
-
-    history_default_limit: int = Field(default=20)
-    history_max_limit: int = Field(default=100)
-
     log_level: str = Field(default="INFO")
 
     @property

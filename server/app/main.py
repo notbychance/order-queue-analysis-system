@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.v1.queue import router as queue_router
 from app.core.config import get_settings
 
 
@@ -12,7 +13,6 @@ app = FastAPI(
     debug=settings.debug,
 )
 
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
@@ -21,6 +21,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(queue_router, prefix=settings.api_prefix)
+
 
 @app.get("/health")
 def health_check() -> dict:
@@ -28,13 +30,4 @@ def health_check() -> dict:
         "status": "ok",
         "service": settings.app_name,
         "environment": settings.app_env,
-    }
-
-
-@app.get(f"{settings.api_prefix}/queue/default")
-def get_default_queue_params() -> dict:
-    return {
-        "lambda_rate": 6,
-        "mu_rate": 8,
-        "description": "Вариант №17: одноканальная система обслуживания заказов",
     }
