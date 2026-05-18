@@ -33,14 +33,44 @@ class HistoryRepository:
             session.add(record)
             session.flush()
 
-            # Сохраняем DTO до обрезки истории. Это важно для случая max_items=0:
-            # запись создается, получает id/created_at, но затем сразу удаляется
-            # из локального хранилища согласно ограничению истории.
+            # Сохраняем DTO до обрезки истории. Это важно для max_items=0:
+            # запись получает id/created_at, но сразу удаляется из хранилища.
             created_item = self._to_schema(record)
 
             self._trim_history(session)
 
             return created_item
+
+    def import_items(
+        self,
+        items: list[HistoryItem],
+        *,
+        replace: bool = False,
+    ) -> int:
+        """Импортировать записи истории.
+
+        При append-импорте дубликаты по id пропускаются.
+        При replace-импорте текущая история очищается перед добавлением записей.
+        """
+
+        imported_count = 0
+
+        with self.connection_manager.session() as session:
+            if replace:
+                session.execute(delete(HistoryRecord))
+
+            for item in items:
+                if not replace and session.get(HistoryRecord, item.id) is not None:
+                    continue
+
+                record = self._create_record_from_item(item)
+                session.add(record)
+                imported_count += 1
+
+            session.flush()
+            self._trim_history(session)
+
+        return imported_count
 
     def list(self, limit: int | None = None) -> list[HistoryItem]:
         safe_limit = self._normalize_limit(limit)
@@ -88,6 +118,11 @@ class HistoryRepository:
 
     def _create_record(self, data: HistoryCreate) -> HistoryRecord:
         values = data.model_dump(exclude_none=True)
+        return HistoryRecord(**values)
+
+    @staticmethod
+    def _create_record_from_item(item: HistoryItem) -> HistoryRecord:
+        values = item.model_dump()
         return HistoryRecord(**values)
 
     def _trim_history(self, session: Session) -> None:

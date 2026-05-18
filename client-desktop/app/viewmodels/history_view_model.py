@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
 from typing import Protocol
 
-from PySide6.QtCore import Property, QObject, Signal, Slot
+from PySide6.QtCore import Property, QObject, QUrl, Signal, Slot
 
 from app.schemas.history import HistoryItem
 
@@ -24,6 +25,17 @@ class HistoryServiceProtocol(Protocol):
     def count_history_items(self) -> int:
         ...
 
+    def export_history_to_file(self, file_path: str | Path) -> Path:
+        ...
+
+    def import_history_from_file(
+        self,
+        file_path: str | Path,
+        *,
+        replace: bool = False,
+    ) -> int:
+        ...
+
 
 class HistoryViewModel(QObject):
     """ViewModel страницы локальной истории расчетов.
@@ -34,6 +46,7 @@ class HistoryViewModel(QObject):
 
     loadingChanged = Signal()
     errorMessageChanged = Signal()
+    statusMessageChanged = Signal()
     historyChanged = Signal()
     repeatRequested = Signal(str, str)
 
@@ -47,6 +60,7 @@ class HistoryViewModel(QObject):
 
         self._is_loading = False
         self._error_message = ""
+        self._status_message = ""
         self._history_items: list[HistoryItem] = []
 
     @Property(bool, notify=loadingChanged)
@@ -56,6 +70,10 @@ class HistoryViewModel(QObject):
     @Property(str, notify=errorMessageChanged)
     def errorMessage(self) -> str:
         return self._error_message
+
+    @Property(str, notify=statusMessageChanged)
+    def statusMessage(self) -> str:
+        return self._status_message
 
     @Property("QVariantList", notify=historyChanged)
     def historyItems(self) -> list[dict[str, object]]:
@@ -83,8 +101,38 @@ class HistoryViewModel(QObject):
             self._set_loading(False)
 
     @Slot(str)
+    def exportHistory(self, file_url: str) -> None:
+        self._clear_error()
+        self._clear_status()
+
+        try:
+            file_path = self._path_from_qml_url(file_url)
+            exported_path = self._history_service.export_history_to_file(file_path)
+            self._set_status(f"История экспортирована: {exported_path}")
+        except Exception as exc:
+            self._set_error(f"Не удалось экспортировать историю: {exc}")
+
+    @Slot(str)
+    def importHistory(self, file_url: str) -> None:
+        self._clear_error()
+        self._clear_status()
+
+        try:
+            file_path = self._path_from_qml_url(file_url)
+            imported_count = self._history_service.import_history_from_file(
+                file_path,
+                replace=False,
+            )
+
+            self.loadHistory()
+            self._set_status(f"Импортировано записей: {imported_count}")
+        except Exception as exc:
+            self._set_error(f"Не удалось импортировать историю: {exc}")
+
+    @Slot(str)
     def deleteHistoryItem(self, record_id: str) -> None:
         self._clear_error()
+        self._clear_status()
 
         if not record_id:
             self._set_error("Не удалось удалить запись: пустой идентификатор.")
@@ -98,22 +146,26 @@ class HistoryViewModel(QObject):
                 return
 
             self.loadHistory()
+            self._set_status("Запись истории удалена.")
         except Exception as exc:
             self._set_error(f"Не удалось удалить запись истории: {exc}")
 
     @Slot()
     def clearHistory(self) -> None:
         self._clear_error()
+        self._clear_status()
 
         try:
-            self._history_service.clear_history()
+            deleted_count = self._history_service.clear_history()
             self.loadHistory()
+            self._set_status(f"История очищена. Удалено записей: {deleted_count}")
         except Exception as exc:
             self._set_error(f"Не удалось очистить историю: {exc}")
 
     @Slot(str)
     def repeatHistoryItem(self, record_id: str) -> None:
         self._clear_error()
+        self._clear_status()
 
         if not record_id:
             self._set_error("Не удалось повторить расчет: пустой идентификатор.")
@@ -151,6 +203,16 @@ class HistoryViewModel(QObject):
     def _clear_error(self) -> None:
         self._set_error("")
 
+    def _set_status(self, message: str) -> None:
+        if self._status_message == message:
+            return
+
+        self._status_message = message
+        self.statusMessageChanged.emit()
+
+    def _clear_status(self) -> None:
+        self._set_status("")
+
     @classmethod
     def _to_qml_item(cls, item: HistoryItem) -> dict[str, object]:
         return {
@@ -170,6 +232,15 @@ class HistoryViewModel(QObject):
             ),
             "conclusion": item.conclusion,
         }
+
+    @staticmethod
+    def _path_from_qml_url(file_url: str) -> Path:
+        url = QUrl(file_url)
+
+        if url.isLocalFile():
+            return Path(url.toLocalFile())
+
+        return Path(file_url).expanduser()
 
     @staticmethod
     def _format_datetime(value: datetime) -> str:

@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import QtQuick.Layouts
 
 import "components"
@@ -15,6 +16,27 @@ Page {
 
     Component.onCompleted: historyViewModel.loadHistory()
 
+    FileDialog {
+        id: exportDialog
+
+        title: "Экспорт истории"
+        fileMode: FileDialog.SaveFile
+        nameFilters: ["JSON files (*.json)"]
+        defaultSuffix: "json"
+
+        onAccepted: historyViewModel.exportHistory(selectedFile.toString())
+    }
+
+    FileDialog {
+        id: importDialog
+
+        title: "Импорт истории"
+        fileMode: FileDialog.OpenFile
+        nameFilters: ["JSON files (*.json)"]
+
+        onAccepted: historyViewModel.importHistory(selectedFile.toString())
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 28
@@ -27,7 +49,19 @@ Page {
                 Layout.fillWidth: true
                 paletteObject: root.paletteObject
                 title: "История расчетов"
-                subtitle: "Локальная история расчетов desktop-клиента хранится в SQLite."
+                subtitle: "Локальная история расчетов desktop-клиента хранится в SQLite. Историю можно импортировать и экспортировать в JSON."
+            }
+
+            Button {
+                text: "Импорт"
+                enabled: !historyViewModel.isLoading
+                onClicked: importDialog.open()
+            }
+
+            Button {
+                text: "Экспорт"
+                enabled: historyViewModel.hasHistory && !historyViewModel.isLoading
+                onClicked: exportDialog.open()
             }
 
             Button {
@@ -55,6 +89,25 @@ Page {
                 anchors.margins: 12
                 text: historyViewModel.errorMessage
                 color: root.paletteObject.danger
+                font.pixelSize: 13
+                wrapMode: Text.WordWrap
+            }
+
+            implicitHeight: visible ? Math.max(48, children[0].implicitHeight + 24) : 0
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            visible: historyViewModel.statusMessage.length > 0
+            radius: 14
+            color: Qt.rgba(22 / 255, 163 / 255, 74 / 255, 0.10)
+            border.color: root.paletteObject.success
+
+            Text {
+                anchors.fill: parent
+                anchors.margins: 12
+                text: historyViewModel.statusMessage
+                color: root.paletteObject.success
                 font.pixelSize: 13
                 wrapMode: Text.WordWrap
             }

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from app.core.settings import DesktopSettings, get_settings
 from app.data.repositories.history_repository import HistoryRepository
 from app.data.sqlalchemy_connection_manager import (
@@ -7,6 +9,10 @@ from app.data.sqlalchemy_connection_manager import (
     create_sqlalchemy_connection_manager,
 )
 from app.schemas.history import HistoryCreate, HistoryItem
+from app.services.history_file_service import (
+    export_history_items_to_json,
+    import_history_items_from_json,
+)
 
 
 class HistoryService:
@@ -27,6 +33,30 @@ class HistoryService:
     def add_history_item(self, data: HistoryCreate) -> HistoryItem:
         """Добавить запись расчета в локальную историю."""
         return self.repository.add(data)
+
+    def import_history_items(
+        self,
+        items: list[HistoryItem],
+        *,
+        replace: bool = False,
+    ) -> int:
+        """Импортировать список записей истории в локальное хранилище."""
+        return self.repository.import_items(items, replace=replace)
+
+    def export_history_to_file(self, file_path: str | Path) -> Path:
+        """Экспортировать текущую историю в JSON-файл."""
+        items = self.repository.list()
+        return export_history_items_to_json(file_path, items)
+
+    def import_history_from_file(
+        self,
+        file_path: str | Path,
+        *,
+        replace: bool = False,
+    ) -> int:
+        """Импортировать историю из JSON-файла."""
+        items = import_history_items_from_json(file_path)
+        return self.repository.import_items(items, replace=replace)
 
     def get_history(self, limit: int | None = None) -> list[HistoryItem]:
         """Получить локальную историю расчетов от новых записей к старым."""
