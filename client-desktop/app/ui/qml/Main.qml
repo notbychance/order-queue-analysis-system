@@ -12,7 +12,7 @@ ApplicationWindow {
     visible: true
     title: appName
 
-    property bool darkMode: false
+    property bool darkMode: themeViewModel.isDark
     property string currentPage: "analysis"
 
     QtObject {
@@ -94,12 +94,44 @@ ApplicationWindow {
                     }
                 }
 
+                Text {
+                    text: "Тема:"
+                    color: palette.mutedText
+                    font.pixelSize: 12
+                }
+
+                ComboBox {
+                    id: themeModeSelect
+
+                    Layout.preferredWidth: 150
+                    model: themeViewModel.themeOptions
+                    textRole: "title"
+                    valueRole: "value"
+                    currentIndex: themeViewModel.themeIndex
+
+                    onActivated: themeViewModel.setThemeMode(currentValue)
+
+                    contentItem: Text {
+                        text: themeModeSelect.displayText
+                        color: palette.text
+                        font.pixelSize: 13
+                        verticalAlignment: Text.AlignVCenter
+                        leftPadding: 10
+                    }
+
+                    background: Rectangle {
+                        radius: 12
+                        color: palette.surfaceMuted
+                        border.color: palette.border
+                    }
+                }
+
                 Button {
                     id: themeButton
 
-                    text: root.darkMode ? "Светлая тема" : "Темная тема"
+                    text: themeViewModel.themeButtonText
                     flat: true
-                    onClicked: root.darkMode = !root.darkMode
+                    onClicked: themeViewModel.toggleTheme()
 
                     contentItem: Text {
                         text: themeButton.text
@@ -207,6 +239,12 @@ ApplicationWindow {
 
                             Text {
                                 text: "Записей: " + historyViewModel.historyCount
+                                color: palette.mutedText
+                                font.pixelSize: 12
+                            }
+
+                            Text {
+                                text: "Тема: " + themeViewModel.themeTitle
                                 color: palette.mutedText
                                 font.pixelSize: 12
                             }

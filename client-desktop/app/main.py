@@ -13,6 +13,7 @@ from app.services.history_service import create_history_service
 from app.viewmodels.analysis_view_model import AnalysisViewModel
 from app.viewmodels.formulas_view_model import FormulasViewModel
 from app.viewmodels.history_view_model import HistoryViewModel
+from app.viewmodels.theme_view_model import ThemeViewModel
 
 
 QML_DIR = Path(__file__).resolve().parent / "ui" / "qml"
@@ -44,12 +45,16 @@ def main() -> int:
     formulas_view_model = FormulasViewModel(
         api_client=queue_api_client,
     )
+    theme_view_model = ThemeViewModel(
+        default_mode=settings.theme,
+    )
 
     engine = QQmlApplicationEngine()
     engine.rootContext().setContextProperty("appName", settings.app_name)
     engine.rootContext().setContextProperty("analysisViewModel", analysis_view_model)
     engine.rootContext().setContextProperty("historyViewModel", history_view_model)
     engine.rootContext().setContextProperty("formulasViewModel", formulas_view_model)
+    engine.rootContext().setContextProperty("themeViewModel", theme_view_model)
 
     engine.load(QUrl.fromLocalFile(str(MAIN_QML)))
 
