@@ -5,3 +5,4 @@ pytest-qt
 respx
 pytest-cov
 ruff
+pyinstaller

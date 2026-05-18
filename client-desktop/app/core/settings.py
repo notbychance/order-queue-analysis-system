@@ -1,12 +1,33 @@
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
 
-CLIENT_DESKTOP_DIR = Path(__file__).resolve().parents[2]
+PROJECT_DIR = Path(__file__).resolve().parents[2]
+
+
+def _is_frozen() -> bool:
+    return bool(getattr(sys, "frozen", False))
+
+
+def _runtime_dir() -> Path:
+    """Каталог запуска приложения.
+
+    В режиме разработки это папка client-desktop.
+    В собранном PyInstaller-приложении это папка рядом с .exe.
+    """
+
+    if _is_frozen():
+        return Path(sys.executable).resolve().parent
+
+    return PROJECT_DIR
+
+
+CLIENT_DESKTOP_DIR = _runtime_dir()
 DEFAULT_ENV_FILE = CLIENT_DESKTOP_DIR / ".env"
 
 

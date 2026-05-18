@@ -16,7 +16,17 @@ from app.viewmodels.history_view_model import HistoryViewModel
 from app.viewmodels.theme_view_model import ThemeViewModel
 
 
-QML_DIR = Path(__file__).resolve().parent / "ui" / "qml"
+def _resource_path(*parts: str) -> Path:
+    """Вернуть путь к ресурсам в dev-режиме и внутри PyInstaller-сборки."""
+
+    if getattr(sys, "frozen", False):
+        base_dir = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+        return base_dir.joinpath(*parts)
+
+    return Path(__file__).resolve().parent.joinpath(*parts)
+
+
+QML_DIR = _resource_path("ui", "qml")
 MAIN_QML = QML_DIR / "Main.qml"
 
 
