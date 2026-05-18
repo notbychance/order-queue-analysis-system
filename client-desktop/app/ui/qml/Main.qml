@@ -162,7 +162,10 @@ ApplicationWindow {
                         text: "Формулы модели"
                         selected: root.currentPage === "formulas"
                         paletteObject: palette
-                        onClicked: root.currentPage = "formulas"
+                        onClicked: {
+                            root.currentPage = "formulas"
+                            formulasViewModel.loadFormulas()
+                        }
                     }
 
                     SidebarButton {
@@ -244,5 +247,6 @@ ApplicationWindow {
 
     Component.onCompleted: {
         historyViewModel.loadHistory()
+        formulasViewModel.loadFormulas()
     }
 }
