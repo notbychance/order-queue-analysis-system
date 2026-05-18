@@ -1,0 +1,176 @@
+# =========================
+# OS files
+# =========================
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+
+# =========================
+# IDE / editors
+# =========================
+
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+
+# =========================
+# Environment files
+# =========================
+
+.env
+.env.*
+!.env.example
+
+
+# =========================
+# Python common
+# =========================
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+*.pyo
+*.pyd
+
+.Python
+pythonenv/
+venv/
+.venv/
+env/
+ENV/
+
+pip-log.txt
+pip-delete-this-directory.txt
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+*.egg-info/
+.eggs/
+build/
+dist/
+wheels/
+
+
+# =========================
+# FastAPI server
+# =========================
+
+server/.env
+server/.env.*
+!server/.env.example
+
+server/__pycache__/
+server/.pytest_cache/
+
+# SQLite / local DB files
+server/*.db
+server/*.sqlite
+server/*.sqlite3
+
+# Alembic local temporary files, if any
+server/alembic/tmp/
+
+
+# =========================
+# PySide6 desktop client
+# =========================
+
+client-desktop/.env
+client-desktop/.env.*
+!client-desktop/.env.example
+
+client-desktop/__pycache__/
+client-desktop/.pytest_cache/
+
+# PyInstaller / cx_Freeze / Nuitka builds
+client-desktop/build/
+client-desktop/dist/
+client-desktop/*.spec
+
+# Qt generated files
+client-desktop/ui_*.py
+client-desktop/qrc_*.py
+
+# Local desktop app data
+client-desktop/data/
+client-desktop/logs/
+
+
+# =========================
+# Node / Vue.js web client
+# =========================
+
+client-web/node_modules/
+client-web/dist/
+client-web/.output/
+client-web/.vite/
+client-web/.nuxt/
+client-web/.cache/
+
+client-web/.env
+client-web/.env.*
+!client-web/.env.example
+
+client-web/npm-debug.log*
+client-web/yarn-debug.log*
+client-web/yarn-error.log*
+client-web/pnpm-debug.log*
+
+
+# =========================
+# Logs
+# =========================
+
+logs/
+*.log
+
+
+# =========================
+# Documentation build artifacts
+# =========================
+
+docs/build/
+docs/dist/
+docs/.cache/
+
+# Temporary office files
+~$*.docx
+~$*.xlsx
+~$*.pptx
+
+
+# =========================
+# Archives / generated files
+# =========================
+
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+
+
+# =========================
+# Do not ignore important dependency files
+# =========================
+
+!requirements.txt
+!server/requirements.txt
+!client-desktop/requirements.txt
+!client-web/package.json
+!client-web/package-lock.json
+!client-web/yarn.lock
+!client-web/pnpm-lock.yaml
