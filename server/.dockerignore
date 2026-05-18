@@ -1,26 +1,47 @@
+# Python cache
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-
+*.py[cod]
+*$py.class
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 .coverage
+.coverage.*
 htmlcov/
+coverage.xml
 
+# Virtual environments
 .venv/
 venv/
 env/
+ENV/
 
+# Local environment files
 .env
 .env.*
 !.env.example
 
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs and local data
+logs/
+*.log
+data/
 *.db
 *.sqlite
 *.sqlite3
 
+# Build artifacts
 build/
 dist/
 *.egg-info/
+.eggs/
+
+# Git and docs artifacts
+.git/
+.gitignore
+README.local.md
