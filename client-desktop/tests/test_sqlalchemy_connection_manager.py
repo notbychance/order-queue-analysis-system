@@ -1,36 +1,21 @@
 from __future__ import annotations
 
 import pytest
-from sqlalchemy import ForeignKey, String, text
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy import String, text
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.data.sqlalchemy_connection_manager import SQLAlchemyConnectionManager
 
 
-class TestBase(DeclarativeBase):
+class SqlAlchemyTestBase(DeclarativeBase):
     pass
 
 
-class ExampleRecord(TestBase):
+class ExampleRecord(SqlAlchemyTestBase):
     __tablename__ = "example_records"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(100), nullable=False)
-
-
-class ParentRecord(TestBase):
-    __tablename__ = "parent_records"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    children: Mapped[list["ChildRecord"]] = relationship(back_populates="parent")
-
-
-class ChildRecord(TestBase):
-    __tablename__ = "child_records"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    parent_id: Mapped[int] = mapped_column(ForeignKey("parent_records.id"))
-    parent: Mapped[ParentRecord] = relationship(back_populates="children")
 
 
 @pytest.mark.unit
@@ -47,7 +32,7 @@ def test_connection_manager_creates_database_directory(tmp_path):
     database_path = tmp_path / "nested" / "data" / "history.sqlite3"
     manager = SQLAlchemyConnectionManager(database_path)
 
-    TestBase.metadata.create_all(manager.engine)
+    SqlAlchemyTestBase.metadata.create_all(manager.engine)
 
     assert database_path.exists()
 
@@ -56,7 +41,7 @@ def test_connection_manager_creates_database_directory(tmp_path):
 @pytest.mark.data
 def test_session_commits_successful_transaction(tmp_path):
     manager = SQLAlchemyConnectionManager(tmp_path / "history.sqlite3")
-    TestBase.metadata.create_all(manager.engine)
+    SqlAlchemyTestBase.metadata.create_all(manager.engine)
 
     with manager.session() as session:
         session.add(ExampleRecord(title="committed"))
@@ -72,7 +57,7 @@ def test_session_commits_successful_transaction(tmp_path):
 @pytest.mark.data
 def test_session_rolls_back_failed_transaction(tmp_path):
     manager = SQLAlchemyConnectionManager(tmp_path / "history.sqlite3")
-    TestBase.metadata.create_all(manager.engine)
+    SqlAlchemyTestBase.metadata.create_all(manager.engine)
 
     with pytest.raises(RuntimeError):
         with manager.session() as session:
