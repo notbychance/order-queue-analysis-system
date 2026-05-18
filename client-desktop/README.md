@@ -2,32 +2,66 @@
 
 Desktop-клиент клиент-серверной системы анализа одноканальной системы массового обслуживания.
 
-Технологии:
+## Стек
 
 - Python
 - PySide6 / QML / Qt Quick
 - httpx
-- SQLAlchemy
+- Pydantic
+- SQLAlchemy ORM
 - SQLite
+- pytest
 - PyInstaller
 
 FastAPI-сервер выполняет расчет модели M/M/1, а desktop-клиент сохраняет историю локально в SQLite. Глобальная БД на сервере не используется.
 
+## Структура модуля
+
+```text
+client-desktop/
+├── app/
+│   ├── api/                 # HTTP-клиент FastAPI
+│   ├── core/                # настройки .env
+│   ├── data/                # SQLAlchemy, ORM-модели, репозитории
+│   ├── schemas/             # Pydantic DTO
+│   ├── services/            # сервисы истории
+│   ├── ui/qml/              # QML-интерфейс
+│   ├── viewmodels/          # ViewModel для QML
+│   └── main.py
+├── tests/
+├── scripts/
+├── requirements.txt
+├── requirements-dev.txt
+├── pytest.ini
+├── Dockerfile
+├── .dockerignore
+└── QueueAnalysisDesktop.spec
+```
+
 ## Локальный запуск
 
-```bash
+Создать окружение:
+
+```powershell
 cd client-desktop
 python -m venv .venv
 .venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
 pip install -r requirements-dev.txt
-python -m app.main
 ```
 
-Перед расчетом должен быть запущен FastAPI-сервер:
+Запустить FastAPI-сервер в отдельном терминале:
 
-```bash
+```powershell
 cd server
 uvicorn app.main:app --reload
+```
+
+Запустить desktop-клиент:
+
+```powershell
+cd client-desktop
+python -m app.main
 ```
 
 По умолчанию desktop-клиент обращается к API:
@@ -45,11 +79,16 @@ http://localhost:8000/api/v1
 ```env
 APP_NAME=Queue Analysis Desktop
 APP_ENV=development
+LOG_LEVEL=INFO
+
 API_BASE_URL=http://localhost:8000/api/v1
 REQUEST_TIMEOUT_SECONDS=10
 
 HISTORY_STORAGE_TYPE=sqlite
 MAX_HISTORY_ITEMS=50
+
+HISTORY_JSON_PATH=./data/history.json
+
 SQLITE_DATABASE_PATH=./data/history.sqlite3
 SQLITE_CONNECTION_TIMEOUT_SECONDS=5
 SQLITE_ECHO_SQL=false
@@ -57,14 +96,51 @@ SQLITE_ECHO_SQL=false
 THEME=system
 ```
 
-После сборки `.exe` файл `.env` можно положить рядом с `QueueAnalysisDesktop.exe`, если нужно изменить настройки без пересборки.
+`.env.example` можно хранить в Git, `.env` обычно не коммитится.
+
+## Локальная история
+
+История расчетов хранится только на стороне desktop-клиента.
+
+По умолчанию SQLite-файл создается здесь:
+
+```text
+client-desktop/data/history.sqlite3
+```
+
+Сервер FastAPI историю не хранит.
 
 ## Тесты
 
-```bash
+```powershell
 cd client-desktop
 pytest
 ```
+
+## Docker
+
+Dockerfile для desktop-модуля предназначен в первую очередь для проверки тестов и зависимостей в изолированной Linux-среде.
+
+Собрать образ:
+
+```bash
+cd client-desktop
+docker build -t queue-analysis-desktop .
+```
+
+Запустить тесты:
+
+```bash
+docker run --rm queue-analysis-desktop
+```
+
+Или явно:
+
+```bash
+docker run --rm queue-analysis-desktop pytest
+```
+
+Полноценный запуск GUI-приложения из Docker не является основным сценарием, потому что PySide6/QML требует графического окружения. Для разработки и защиты курсовой desktop-клиент запускается локально на Windows, а Docker используется для проверки сборки зависимостей и тестов.
 
 ## Сборка EXE
 
@@ -84,38 +160,22 @@ cd client-desktop
 scripts\build_exe.bat
 ```
 
-Результат будет в папке:
-
-```text
-client-desktop/dist/QueueAnalysisDesktop/
-```
-
-Запуск:
+Результат:
 
 ```text
 client-desktop/dist/QueueAnalysisDesktop/QueueAnalysisDesktop.exe
 ```
 
-## Что попадает в сборку
+После сборки `.env` можно положить рядом с `QueueAnalysisDesktop.exe`, если нужно изменить `API_BASE_URL`, путь SQLite-БД или тему без пересборки.
 
-В сборку включаются:
+## Основные функции
 
-- Python-код приложения;
-- QML-файлы интерфейса;
-- библиотеки PySide6;
-- SQLAlchemy/httpx/Pydantic;
-- `.env.example`.
-
-Файл `.env` не обязан попадать в сборку. Его можно создать вручную рядом с `.exe`.
-
-## Локальная история
-
-История расчетов хранится в SQLite на стороне desktop-клиента.
-
-По умолчанию:
-
-```text
-./data/history.sqlite3
-```
-
-Для собранного приложения относительный путь считается от папки рядом с `.exe`.
+- ввод интенсивности поступления заказов `λ`;
+- ввод интенсивности обслуживания `μ`;
+- отправка параметров на FastAPI;
+- отображение результатов анализа;
+- график чувствительности;
+- локальная история расчетов в SQLite;
+- импорт/экспорт истории в JSON;
+- светлая/темная/system-тема;
+- сборка Windows `.exe`.
