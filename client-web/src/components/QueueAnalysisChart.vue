@@ -182,7 +182,7 @@ function roundSvg(value: number): number {
   <n-card class="queue-chart-card" :bordered="false">
     <template #header>
       <div class="queue-chart-card__header">
-        <div>
+        <div class="queue-chart-card__header-main">
           <div class="queue-chart-card__title">График чувствительности системы</div>
           <div class="queue-chart-card__subtitle">
             Анализ изменения показателя при росте интенсивности поступления λ
@@ -328,6 +328,7 @@ function roundSvg(value: number): number {
 .queue-chart-card {
   margin-top: 16px;
   border: 1px solid var(--app-border-color);
+  border-radius: var(--app-radius-card);
   background: var(--app-card-bg);
 }
 
@@ -338,10 +339,14 @@ function roundSvg(value: number): number {
   gap: 16px;
 }
 
+.queue-chart-card__header-main {
+  min-width: 0;
+}
+
 .queue-chart-card__title {
+  color: var(--app-text-color);
   font-size: 18px;
   font-weight: 700;
-  color: var(--app-text-color);
 }
 
 .queue-chart-card__subtitle,
@@ -349,18 +354,28 @@ function roundSvg(value: number): number {
   margin-top: 4px;
   color: var(--app-text-muted-color);
   font-size: 14px;
+  overflow-wrap: anywhere;
 }
 
 .queue-chart-card__controls {
   display: flex;
   justify-content: flex-start;
+  max-width: 100%;
   margin-bottom: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.queue-chart-card__controls :deep(.n-radio-group) {
+  display: inline-flex;
+  min-width: max-content;
 }
 
 .queue-chart-card__svg-wrapper {
   width: 100%;
   overflow-x: auto;
   padding: 8px 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .queue-chart {
@@ -421,6 +436,7 @@ function roundSvg(value: number): number {
 
 .queue-chart-card__table-row {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: 4px;
   padding: 10px;
@@ -430,20 +446,33 @@ function roundSvg(value: number): number {
   font-size: 13px;
 }
 
+.queue-chart-card__table-row span {
+  overflow-wrap: anywhere;
+}
+
 .queue-chart-card__table-row--head {
-  font-weight: 700;
   color: var(--app-text-color);
+  font-weight: 700;
 }
 
 @media (max-width: 768px) {
-  .queue-chart-card__header,
-  .queue-chart-card__controls {
+  .queue-chart-card__header {
     align-items: stretch;
     flex-direction: column;
   }
 
   .queue-chart-card__table {
     grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .queue-chart {
+    min-width: 500px;
+  }
+
+  .queue-chart-card__table {
+    grid-template-columns: 1fr;
   }
 }
 </style>

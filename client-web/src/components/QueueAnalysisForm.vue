@@ -79,37 +79,33 @@ function submitForm(): void {
     </template>
 
     <n-form label-placement="top" @submit.prevent="submitForm">
-      <n-grid :cols="2" :x-gap="18" :y-gap="12" item-responsive responsive="screen">
-        <n-grid-item>
-          <n-form-item label="Интенсивность поступления λ" path="lambdaRate">
-            <n-input-number
-              v-model:value="lambdaRate"
-              class="full-width"
-              :min="0"
-              :precision="3"
-              :show-button="true"
-              placeholder="Введите λ"
-            >
-              <template #suffix>заказов/день</template>
-            </n-input-number>
-          </n-form-item>
-        </n-grid-item>
+      <div class="analysis-form-card__grid">
+        <n-form-item label="Интенсивность поступления λ" path="lambdaRate">
+          <n-input-number
+            v-model:value="lambdaRate"
+            class="full-width"
+            :min="0"
+            :precision="3"
+            :show-button="true"
+            placeholder="Введите λ"
+          >
+            <template #suffix>заказов/день</template>
+          </n-input-number>
+        </n-form-item>
 
-        <n-grid-item>
-          <n-form-item label="Интенсивность обслуживания μ" path="muRate">
-            <n-input-number
-              v-model:value="muRate"
-              class="full-width"
-              :min="0.001"
-              :precision="3"
-              :show-button="true"
-              placeholder="Введите μ"
-            >
-              <template #suffix>заказов/день</template>
-            </n-input-number>
-          </n-form-item>
-        </n-grid-item>
-      </n-grid>
+        <n-form-item label="Интенсивность обслуживания μ" path="muRate">
+          <n-input-number
+            v-model:value="muRate"
+            class="full-width"
+            :min="0.001"
+            :precision="3"
+            :show-button="true"
+            placeholder="Введите μ"
+          >
+            <template #suffix>заказов/день</template>
+          </n-input-number>
+        </n-form-item>
+      </div>
 
       <n-alert v-if="validationMessage" type="error" :show-icon="true" class="form-alert">
         {{ validationMessage }}
@@ -131,7 +127,13 @@ function submitForm(): void {
 
 <style scoped>
 .analysis-form-card {
-  border-radius: 20px;
+  border-radius: var(--app-radius-card);
+}
+
+.analysis-form-card__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 18px;
 }
 
 .full-width {
@@ -147,5 +149,20 @@ function submitForm(): void {
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 18px;
+}
+
+@media (max-width: 640px) {
+  .analysis-form-card__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .form-actions :deep(.n-button) {
+    width: 100%;
+  }
 }
 </style>

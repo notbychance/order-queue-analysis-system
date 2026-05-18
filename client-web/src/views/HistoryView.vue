@@ -45,7 +45,7 @@ function confirmClearHistory(): void {
 </script>
 
 <template>
-  <section class="history-view">
+  <section class="history-view responsive-page">
     <PageHeader
       title="Локальная история расчетов"
       subtitle="История хранится только в браузере через Pinia и localStorage. Сервер FastAPI не сохраняет расчеты."
@@ -66,7 +66,6 @@ function confirmClearHistory(): void {
 
 <style scoped>
 .history-view {
-  max-width: 1120px;
-  margin: 0 auto;
+  --page-max-width: 1120px;
 }
 </style>

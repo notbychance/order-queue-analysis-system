@@ -1,47 +1,45 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { RouterLink, RouterView, useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { RouterLink, RouterView } from 'vue-router'
 import { darkTheme, type GlobalTheme } from 'naive-ui'
 
-import HistoryFileActions from './components/HistoryFileActions.vue'
+import HistoryPanel from './components/HistoryPanel.vue'
 import ThemeToggle from './components/ThemeToggle.vue'
-import { useQueueAnalysisStore } from './stores/queueAnalysisStore'
 import { useThemeStore } from './stores/themeStore'
 
-const router = useRouter()
-const queueStore = useQueueAnalysisStore()
 const themeStore = useThemeStore()
+
+const isHistoryDrawerOpen = ref(false)
+const isMobileLayout = ref(false)
 
 const naiveTheme = computed<GlobalTheme | null>(() => {
   return themeStore.isDark ? darkTheme : null
 })
 
-const lastHistoryItems = computed(() => queueStore.history.slice(0, 5))
-
-function formatNumber(value: number | null | undefined, digits = 3): string {
-  if (value === null || value === undefined || Number.isNaN(value)) {
-    return '—'
+function updateLayoutMode(): void {
+  if (typeof window === 'undefined') {
+    return
   }
 
-  return new Intl.NumberFormat('ru-RU', {
-    maximumFractionDigits: digits,
-  }).format(value)
+  isMobileLayout.value = window.matchMedia('(max-width: 1100px)').matches
+
+  if (!isMobileLayout.value) {
+    isHistoryDrawerOpen.value = false
+  }
 }
 
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value))
+function closeHistoryDrawer(): void {
+  isHistoryDrawerOpen.value = false
 }
 
-async function repeatHistoryItem(id: string): Promise<void> {
-  await queueStore.repeatHistoryItem(id)
-  await router.push({ name: 'analysis' })
-}
+onMounted(() => {
+  updateLayoutMode()
+  window.addEventListener('resize', updateLayoutMode)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateLayoutMode)
+})
 </script>
 
 <template>
@@ -50,21 +48,32 @@ async function repeatHistoryItem(id: string): Promise<void> {
       <n-dialog-provider>
         <n-layout class="app-shell" position="absolute">
           <n-layout-header bordered class="app-header">
-            <div class="brand">
+            <RouterLink to="/" class="brand" aria-label="Перейти к анализу">
               <div class="brand__mark">M/M/1</div>
-              <div>
+              <div class="brand__text">
                 <h1 class="brand__title">Анализ очереди заказов</h1>
                 <p class="brand__subtitle">Курсовая работа · методы оптимизации</p>
               </div>
-            </div>
+            </RouterLink>
 
-            <nav class="nav">
+            <nav class="nav" aria-label="Основная навигация">
               <RouterLink to="/" class="nav__link">Анализ</RouterLink>
               <RouterLink to="/history" class="nav__link">История</RouterLink>
               <RouterLink to="/formulas" class="nav__link">Формулы</RouterLink>
             </nav>
 
-            <ThemeToggle />
+            <div class="app-header__actions">
+              <n-button
+                class="history-drawer-button"
+                secondary
+                size="small"
+                @click="isHistoryDrawerOpen = true"
+              >
+                Локальная история
+              </n-button>
+
+              <ThemeToggle />
+            </div>
           </n-layout-header>
 
           <n-layout has-sider class="app-body">
@@ -73,6 +82,7 @@ async function repeatHistoryItem(id: string): Promise<void> {
             </n-layout-content>
 
             <n-layout-sider
+              v-if="!isMobileLayout"
               bordered
               class="history-sider"
               collapse-mode="width"
@@ -80,66 +90,21 @@ async function repeatHistoryItem(id: string): Promise<void> {
               :width="360"
               show-trigger="bar"
             >
-              <n-card title="Локальная история" size="small" :bordered="false" class="history-card">
-                <template #header-extra>
-                  <HistoryFileActions />
-                </template>
-
-                <n-empty
-                  v-if="lastHistoryItems.length === 0"
-                  description="История расчетов пока пуста"
-                  size="small"
-                />
-
-                <n-space v-else vertical :size="12">
-                  <n-card
-                    v-for="item in lastHistoryItems"
-                    :key="item.id"
-                    size="small"
-                    embedded
-                    class="history-item"
-                  >
-                    <div class="history-item__top">
-                      <div>
-                        <div class="history-item__params">
-                          λ = {{ formatNumber(item.request.lambda_rate) }},
-                          μ = {{ formatNumber(item.request.mu_rate) }}
-                        </div>
-                        <div class="history-item__date">{{ formatDate(item.createdAt) }}</div>
-                      </div>
-
-                      <n-tag
-                        size="small"
-                        :type="item.response.is_stable ? 'success' : 'error'"
-                        round
-                      >
-                        {{ item.response.is_stable ? 'устойчива' : 'неустойчива' }}
-                      </n-tag>
-                    </div>
-
-                    <div class="history-item__metrics">
-                      <span>Загрузка:</span>
-                      <strong>{{ formatNumber(item.response.utilization_percent, 2) }}%</strong>
-                    </div>
-
-                    <div class="history-item__actions">
-                      <n-button size="tiny" type="primary" secondary @click="repeatHistoryItem(item.id)">
-                        Повторить
-                      </n-button>
-                      <n-button
-                        size="tiny"
-                        tertiary
-                        type="error"
-                        @click="queueStore.removeHistoryItem(item.id)"
-                      >
-                        Удалить
-                      </n-button>
-                    </div>
-                  </n-card>
-                </n-space>
-              </n-card>
+              <HistoryPanel />
             </n-layout-sider>
           </n-layout>
+
+          <n-drawer
+            v-model:show="isHistoryDrawerOpen"
+            placement="right"
+            :width="360"
+            :max-width="'92vw'"
+            display-directive="show"
+          >
+            <n-drawer-content title="Локальная история" closable>
+              <HistoryPanel drawer-mode @repeat="closeHistoryDrawer" />
+            </n-drawer-content>
+          </n-drawer>
         </n-layout>
       </n-dialog-provider>
     </n-message-provider>
@@ -154,10 +119,10 @@ async function repeatHistoryItem(id: string): Promise<void> {
 
 .app-header {
   display: grid;
-  grid-template-columns: minmax(240px, 1fr) auto auto;
+  grid-template-columns: minmax(230px, 1fr) auto auto;
   gap: 24px;
   align-items: center;
-  min-height: 76px;
+  min-height: var(--app-header-height);
   padding: 12px 28px;
   background: var(--color-surface);
 }
@@ -184,17 +149,27 @@ async function repeatHistoryItem(id: string): Promise<void> {
   flex: 0 0 auto;
 }
 
+.brand__text {
+  min-width: 0;
+}
+
 .brand__title {
   margin: 0;
+  overflow: hidden;
   color: var(--color-heading);
   font-size: 1.08rem;
   line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .brand__subtitle {
   margin: 4px 0 0;
+  overflow: hidden;
   color: var(--color-text-muted);
   font-size: 0.84rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nav {
@@ -202,6 +177,7 @@ async function repeatHistoryItem(id: string): Promise<void> {
   gap: 8px;
   align-items: center;
   justify-content: center;
+  min-width: 0;
 }
 
 .nav__link {
@@ -213,6 +189,7 @@ async function repeatHistoryItem(id: string): Promise<void> {
   color: var(--color-text);
   font-weight: 600;
   text-decoration: none;
+  white-space: nowrap;
   transition:
     color 0.2s ease,
     background-color 0.2s ease;
@@ -228,13 +205,25 @@ async function repeatHistoryItem(id: string): Promise<void> {
   background: var(--color-primary-soft);
 }
 
+.app-header__actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.history-drawer-button {
+  display: none;
+}
+
 .app-body {
-  top: 76px;
+  top: var(--app-header-height);
 }
 
 .app-content {
-  min-height: calc(100vh - 76px);
-  padding: 28px;
+  min-width: 0;
+  min-height: calc(100vh - var(--app-header-height));
+  padding: var(--app-content-padding);
   background: var(--color-background);
 }
 
@@ -242,71 +231,41 @@ async function repeatHistoryItem(id: string): Promise<void> {
   background: var(--color-surface);
 }
 
-.history-card {
-  height: 100%;
-  border-radius: 0;
-}
-
-.history-item {
-  border-radius: 16px;
-}
-
-.history-item__top {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-
-.history-item__params {
-  color: var(--color-heading);
-  font-weight: 700;
-}
-
-.history-item__date {
-  margin-top: 4px;
-  color: var(--color-text-muted);
-  font-size: 0.82rem;
-}
-
-.history-item__metrics {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--color-border);
-  color: var(--color-text);
-}
-
-.history-item__actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 14px;
-}
-
-@media (max-width: 980px) {
+@media (max-width: 1100px) {
   .app-header {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(210px, 1fr) auto;
   }
 
   .nav {
     grid-column: 1 / -1;
     justify-content: flex-start;
     overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .history-drawer-button {
+    display: inline-flex;
   }
 
   .app-body {
-    top: 112px;
+    top: 116px;
   }
 
   .app-content {
-    min-height: calc(100vh - 112px);
-    padding: 18px;
+    min-height: calc(100vh - 116px);
   }
 }
 
 @media (max-width: 720px) {
   .app-header {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    min-height: 150px;
     padding: 12px 16px;
   }
 
@@ -318,6 +277,7 @@ async function repeatHistoryItem(id: string): Promise<void> {
   }
 
   .brand__title {
+    white-space: normal;
     font-size: 0.98rem;
   }
 
@@ -325,8 +285,39 @@ async function repeatHistoryItem(id: string): Promise<void> {
     display: none;
   }
 
+  .nav {
+    width: 100%;
+  }
+
+  .app-header__actions {
+    justify-content: space-between;
+  }
+
+  .app-body {
+    top: 150px;
+  }
+
   .app-content {
-    padding: 14px;
+    min-height: calc(100vh - 150px);
+  }
+}
+
+@media (max-width: 420px) {
+  .app-header__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .history-drawer-button {
+    justify-content: center;
+  }
+
+  .app-body {
+    top: 192px;
+  }
+
+  .app-content {
+    min-height: calc(100vh - 192px);
   }
 }
 </style>

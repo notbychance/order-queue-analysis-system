@@ -6,11 +6,13 @@ export const naiveStubs = {
 
   NButton: {
     props: ['type', 'attrType', 'loading', 'disabled', 'secondary', 'tertiary', 'strong', 'round', 'size'],
+    emits: ['click'],
     template: `
       <button
         class="n-button"
         :type="attrType || 'button'"
         :disabled="disabled || loading"
+        @click="$emit('click', $event)"
       >
         <slot />
       </button>
@@ -37,6 +39,17 @@ export const naiveStubs = {
 
   NDialogProvider: {
     template: '<div class="n-dialog-provider"><slot /></div>',
+  },
+
+  NDrawer: {
+    props: ['show', 'placement', 'width', 'maxWidth', 'displayDirective'],
+    emits: ['update:show'],
+    template: '<aside v-if="show" class="n-drawer"><slot /></aside>',
+  },
+
+  NDrawerContent: {
+    props: ['title', 'closable'],
+    template: '<section class="n-drawer-content"><header>{{ title }}</header><slot /></section>',
   },
 
   NEmpty: {

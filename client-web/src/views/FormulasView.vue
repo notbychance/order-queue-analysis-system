@@ -27,7 +27,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="formulas-view">
+  <section class="formulas-view responsive-page">
     <PageHeader
       title="Математическая модель"
       subtitle="Сервер возвращает формулы модели M/M/1, которые используются при анализе работы конторы с одним клерком."
@@ -45,7 +45,6 @@ onMounted(async () => {
 
 <style scoped>
 .formulas-view {
-  max-width: 1040px;
-  margin: 0 auto;
+  --page-max-width: 1040px;
 }
 </style>

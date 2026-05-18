@@ -25,16 +25,20 @@ const formulaTitles: Record<string, string> = {
           Условие устойчивости: <strong>{{ formulas.stability_condition }}</strong>.
         </n-alert>
 
-        <n-grid :cols="2" :x-gap="14" :y-gap="14" item-responsive responsive="screen">
-          <n-grid-item v-for="(formula, key) in formulas.formulas" :key="key">
-            <n-card size="small" embedded class="formula-item">
-              <div class="formula-item__title">
-                {{ formulaTitles[key] ?? key }}
-              </div>
-              <code>{{ formula }}</code>
-            </n-card>
-          </n-grid-item>
-        </n-grid>
+        <div class="formula-grid">
+          <n-card
+            v-for="(formula, key) in formulas.formulas"
+            :key="key"
+            size="small"
+            embedded
+            class="formula-item"
+          >
+            <div class="formula-item__title">
+              {{ formulaTitles[key] ?? key }}
+            </div>
+            <code>{{ formula }}</code>
+          </n-card>
+        </div>
       </template>
     </n-spin>
   </n-card>
@@ -43,11 +47,17 @@ const formulaTitles: Record<string, string> = {
 <style scoped>
 .formula-card,
 .formula-item {
-  border-radius: 20px;
+  border-radius: var(--app-radius-card);
 }
 
 .formula-card__intro {
   margin-bottom: 16px;
+}
+
+.formula-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .formula-item__title {
@@ -59,6 +69,7 @@ const formulaTitles: Record<string, string> = {
 
 .formula-item code {
   display: block;
+  max-width: 100%;
   padding: 12px;
   overflow-x: auto;
   color: var(--color-heading);
@@ -66,5 +77,12 @@ const formulaTitles: Record<string, string> = {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 14px;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .formula-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

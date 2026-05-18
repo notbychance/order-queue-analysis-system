@@ -34,7 +34,7 @@ const emit = defineEmits<{
     <n-space v-else vertical :size="compact ? 10 : 14">
       <n-card v-for="item in items" :key="item.id" size="small" embedded class="history-row">
         <div class="history-row__header">
-          <div>
+          <div class="history-row__main">
             <div class="history-row__params">
               λ = {{ formatNumber(item.request.lambda_rate) }}, μ = {{ formatNumber(item.request.mu_rate) }}
             </div>
@@ -85,7 +85,7 @@ const emit = defineEmits<{
 <style scoped>
 .history-list-card,
 .history-row {
-  border-radius: 20px;
+  border-radius: var(--app-radius-card);
 }
 
 .history-row__header {
@@ -95,9 +95,14 @@ const emit = defineEmits<{
   justify-content: space-between;
 }
 
+.history-row__main {
+  min-width: 0;
+}
+
 .history-row__params {
   color: var(--color-heading);
   font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .history-row__date {
@@ -114,6 +119,7 @@ const emit = defineEmits<{
 }
 
 .history-row__metrics div {
+  min-width: 0;
   padding: 10px;
   border: 1px solid var(--color-border);
   border-radius: 14px;
@@ -131,12 +137,14 @@ const emit = defineEmits<{
   margin-top: 4px;
   color: var(--color-heading);
   font-size: 1rem;
+  overflow-wrap: anywhere;
 }
 
 .history-row__conclusion {
   margin: 14px 0 0;
   color: var(--color-text);
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .history-row__actions {
@@ -146,9 +154,29 @@ const emit = defineEmits<{
   margin-top: 14px;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 820px) {
   .history-row__metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .history-row__header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .history-row__metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .history-row__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .history-row__actions :deep(.n-button) {
+    width: 100%;
   }
 }
 </style>

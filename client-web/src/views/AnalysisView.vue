@@ -28,30 +28,48 @@ function resetResult(): void {
 </script>
 
 <template>
-  <section class="analysis-view">
+  <section class="analysis-view responsive-page">
     <PageHeader
       title="Анализ одноканальной системы обслуживания"
       subtitle="Введите интенсивность поступления заказов λ и интенсивность обслуживания μ. Сервер FastAPI выполнит расчет модели M/M/1, а результат сохранится в локальную историю браузера."
     />
 
-    <n-grid :cols="2" :x-gap="20" :y-gap="20" item-responsive responsive="screen">
-      <n-grid-item>
-        <QueueAnalysisForm :loading="queueStore.isLoading" @submit="analyze" @reset="resetResult" />
-      </n-grid-item>
+    <div class="analysis-view__grid">
+      <QueueAnalysisForm :loading="queueStore.isLoading" @submit="analyze" @reset="resetResult" />
 
-      <n-grid-item>
-        <QueueAnalysisResult v-if="result" :result="result" />
-        <n-card v-else title="Результат анализа">
-          <n-empty description="Введите параметры системы и выполните расчет" />
-        </n-card>
-      </n-grid-item>
-    </n-grid>
+      <QueueAnalysisResult v-if="result" :result="result" />
+      <n-card v-else title="Результат анализа" class="analysis-view__empty-result">
+        <n-empty description="Введите параметры системы и выполните расчет" />
+      </n-card>
+    </div>
   </section>
 </template>
 
 <style scoped>
 .analysis-view {
-  max-width: 1280px;
-  margin: 0 auto;
+  --page-max-width: 1280px;
+}
+
+.analysis-view__grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.85fr) minmax(0, 1.15fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.analysis-view__empty-result {
+  border-radius: var(--app-radius-card);
+}
+
+@media (max-width: 1180px) {
+  .analysis-view__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .analysis-view__grid {
+    gap: 14px;
+  }
 }
 </style>

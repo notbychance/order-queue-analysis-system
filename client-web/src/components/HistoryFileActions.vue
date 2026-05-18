@@ -49,7 +49,7 @@ async function handleFileChange(event: Event): Promise<void> {
 </script>
 
 <template>
-  <n-space :size="6" wrap>
+  <div class="history-file-actions">
     <n-button size="tiny" secondary :disabled="!queueStore.hasHistory" @click="exportHistory">
       Экспорт
     </n-button>
@@ -75,11 +75,29 @@ async function handleFileChange(event: Event): Promise<void> {
       accept="application/json,.json"
       @change="handleFileChange"
     />
-  </n-space>
+  </div>
 </template>
 
 <style scoped>
+.history-file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
 .history-file-input {
   display: none;
+}
+
+@media (max-width: 520px) {
+  .history-file-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .history-file-actions :deep(.n-button) {
+    flex: 1 1 92px;
+  }
 }
 </style>

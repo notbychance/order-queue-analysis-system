@@ -7,7 +7,24 @@
   --app-text-color: #111827;
   --app-text-muted-color: #6b7280;
   --app-primary-color: #2563eb;
+  --app-primary-soft-color: rgba(37, 99, 235, 0.12);
   --app-warning-color: #d97706;
+
+  /* Shared semantic aliases used by layout/components */
+  --color-background: var(--app-bg-color);
+  --color-surface: var(--app-card-bg);
+  --color-surface-soft: var(--app-soft-bg);
+  --color-border: var(--app-border-color);
+  --color-heading: var(--app-text-color);
+  --color-text: var(--app-text-color);
+  --color-text-muted: var(--app-text-muted-color);
+  --color-primary: var(--app-primary-color);
+  --color-primary-soft: var(--app-primary-soft-color);
+  --color-warning: var(--app-warning-color);
+
+  --app-header-height: 76px;
+  --app-content-padding: 28px;
+  --app-radius-card: 20px;
 }
 
 [data-theme='dark'] {
@@ -18,10 +35,24 @@
   --app-text-color: #f9fafb;
   --app-text-muted-color: #cbd5e1;
   --app-primary-color: #60a5fa;
+  --app-primary-soft-color: rgba(96, 165, 250, 0.16);
   --app-warning-color: #fbbf24;
+
+  --color-background: var(--app-bg-color);
+  --color-surface: var(--app-card-bg);
+  --color-surface-soft: var(--app-soft-bg);
+  --color-border: var(--app-border-color);
+  --color-heading: var(--app-text-color);
+  --color-text: var(--app-text-color);
+  --color-text-muted: var(--app-text-muted-color);
+  --color-primary: var(--app-primary-color);
+  --color-primary-soft: var(--app-primary-soft-color);
+  --color-warning: var(--app-warning-color);
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -31,8 +62,13 @@ body,
   min-height: 100%;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
+  overflow-x: hidden;
   background: var(--app-bg-color);
   color: var(--app-text-color);
   font-family:
@@ -48,4 +84,37 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+svg,
+img {
+  max-width: 100%;
+}
+
+.responsive-page {
+  width: min(100%, var(--page-max-width, 1280px));
+  margin: 0 auto;
+}
+
+@media (max-width: 1180px) {
+  :root {
+    --app-content-padding: 22px;
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --app-content-padding: 14px;
+  }
+
+  body {
+    font-size: 15px;
+  }
 }

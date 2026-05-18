@@ -11,7 +11,19 @@ const buttonText = computed(() => {
 </script>
 
 <template>
-  <n-button secondary strong round @click="themeStore.toggleTheme">
+  <n-button class="theme-toggle" secondary strong round @click="themeStore.toggleTheme">
     {{ buttonText }}
   </n-button>
 </template>
+
+<style scoped>
+.theme-toggle {
+  white-space: nowrap;
+}
+
+@media (max-width: 420px) {
+  .theme-toggle {
+    width: 100%;
+  }
+}
+</style>

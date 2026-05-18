@@ -35,7 +35,7 @@ function formatPercent(value: number | null | undefined): string {
     <n-card class="queue-result__summary" :bordered="false">
       <template #header>
         <div class="queue-result__header">
-          <div>
+          <div class="queue-result__header-main">
             <div class="queue-result__title">Результаты анализа</div>
             <div class="queue-result__subtitle">
               λ = {{ formatNumber(result.lambda_rate) }} {{ result.arrival_rate_unit }},
@@ -49,39 +49,31 @@ function formatPercent(value: number | null | undefined): string {
         </div>
       </template>
 
-      <n-grid :cols="4" :x-gap="12" :y-gap="12" responsive="screen">
-        <n-gi>
-          <div class="queue-result__metric">
-            <span class="queue-result__metric-label">Загрузка клерка</span>
-            <strong>{{ formatPercent(result.utilization_percent) }}</strong>
-            <small>ρ = {{ formatNumber(result.utilization) }}</small>
-          </div>
-        </n-gi>
+      <div class="queue-result__metrics">
+        <div class="queue-result__metric">
+          <span class="queue-result__metric-label">Загрузка клерка</span>
+          <strong>{{ formatPercent(result.utilization_percent) }}</strong>
+          <small>ρ = {{ formatNumber(result.utilization) }}</small>
+        </div>
 
-        <n-gi>
-          <div class="queue-result__metric">
-            <span class="queue-result__metric-label">Среднее число заказов</span>
-            <strong>{{ formatNumber(result.average_orders_in_system) }}</strong>
-            <small>L, заказов в системе</small>
-          </div>
-        </n-gi>
+        <div class="queue-result__metric">
+          <span class="queue-result__metric-label">Среднее число заказов</span>
+          <strong>{{ formatNumber(result.average_orders_in_system) }}</strong>
+          <small>L, заказов в системе</small>
+        </div>
 
-        <n-gi>
-          <div class="queue-result__metric">
-            <span class="queue-result__metric-label">Ожидание обработки</span>
-            <strong>{{ formatNumber(result.average_waiting_time_hours) }} ч</strong>
-            <small>Wq = {{ formatNumber(result.average_waiting_time) }} {{ result.time_unit }}</small>
-          </div>
-        </n-gi>
+        <div class="queue-result__metric">
+          <span class="queue-result__metric-label">Ожидание обработки</span>
+          <strong>{{ formatNumber(result.average_waiting_time_hours) }} ч</strong>
+          <small>Wq = {{ formatNumber(result.average_waiting_time) }} {{ result.time_unit }}</small>
+        </div>
 
-        <n-gi>
-          <div class="queue-result__metric">
-            <span class="queue-result__metric-label">Время в системе</span>
-            <strong>{{ formatNumber(result.average_time_in_system_hours) }} ч</strong>
-            <small>W = {{ formatNumber(result.average_time_in_system) }} {{ result.time_unit }}</small>
-          </div>
-        </n-gi>
-      </n-grid>
+        <div class="queue-result__metric">
+          <span class="queue-result__metric-label">Время в системе</span>
+          <strong>{{ formatNumber(result.average_time_in_system_hours) }} ч</strong>
+          <small>W = {{ formatNumber(result.average_time_in_system) }} {{ result.time_unit }}</small>
+        </div>
+      </div>
 
       <n-alert class="queue-result__conclusion" :type="stabilityType" :bordered="false">
         {{ result.conclusion }}
@@ -95,12 +87,14 @@ function formatPercent(value: number | null | undefined): string {
 <style scoped>
 .queue-result {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: 16px;
 }
 
 .queue-result__summary {
   border: 1px solid var(--app-border-color);
+  border-radius: var(--app-radius-card);
   background: var(--app-card-bg);
 }
 
@@ -111,21 +105,33 @@ function formatPercent(value: number | null | undefined): string {
   gap: 16px;
 }
 
+.queue-result__header-main {
+  min-width: 0;
+}
+
 .queue-result__title {
+  color: var(--app-text-color);
   font-size: 20px;
   font-weight: 700;
-  color: var(--app-text-color);
 }
 
 .queue-result__subtitle {
   margin-top: 4px;
   color: var(--app-text-muted-color);
   font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.queue-result__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+  gap: 12px;
 }
 
 .queue-result__metric {
-  min-height: 118px;
   display: flex;
+  min-height: 118px;
+  min-width: 0;
   flex-direction: column;
   justify-content: space-between;
   gap: 8px;
@@ -142,23 +148,39 @@ function formatPercent(value: number | null | undefined): string {
 
 .queue-result__metric strong {
   color: var(--app-text-color);
-  font-size: 24px;
+  font-size: clamp(1.25rem, 3vw, 1.5rem);
   line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 
 .queue-result__metric small {
   color: var(--app-text-muted-color);
   font-size: 12px;
+  overflow-wrap: anywhere;
 }
 
 .queue-result__conclusion {
   margin-top: 16px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 980px) {
+  .queue-result__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
   .queue-result__header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .queue-result__metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .queue-result__metric {
+    min-height: auto;
   }
 }
 </style>
