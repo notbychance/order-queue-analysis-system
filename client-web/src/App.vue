@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { darkTheme, type GlobalTheme } from 'naive-ui'
 
+import HistoryFileActions from './components/HistoryFileActions.vue'
 import ThemeToggle from './components/ThemeToggle.vue'
 import { useQueueAnalysisStore } from './stores/queueAnalysisStore'
 import { useThemeStore } from './stores/themeStore'
@@ -81,15 +82,7 @@ async function repeatHistoryItem(id: string): Promise<void> {
             >
               <n-card title="Локальная история" size="small" :bordered="false" class="history-card">
                 <template #header-extra>
-                  <n-button
-                    v-if="queueStore.history.length > 0"
-                    size="tiny"
-                    tertiary
-                    type="error"
-                    @click="queueStore.clearHistory"
-                  >
-                    Очистить
-                  </n-button>
+                  <HistoryFileActions />
                 </template>
 
                 <n-empty

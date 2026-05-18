@@ -1,7 +1,12 @@
 import { defineStore } from 'pinia'
 
 import { queueApi } from '@/api/queueApi'
-import type { QueueHistoryItem } from '@/types/history'
+import { historyFileService } from '@/services/historyFileService'
+import type {
+  QueueHistoryImportMode,
+  QueueHistoryImportResult,
+  QueueHistoryItem,
+} from '@/types/history'
 import type {
   QueueAnalysisRequest,
   QueueAnalysisResponse,
@@ -34,6 +39,12 @@ function getErrorMessage(error: unknown): string {
   }
 
   return 'Не удалось выполнить анализ системы'
+}
+
+function normalizeHistoryItems(items: QueueHistoryItem[]): QueueHistoryItem[] {
+  return [...items]
+    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
+    .slice(0, MAX_HISTORY_ITEMS)
 }
 
 export const useQueueAnalysisStore = defineStore('queue-analysis', {
@@ -116,13 +127,62 @@ export const useQueueAnalysisStore = defineStore('queue-analysis', {
         response,
       }
 
-      this.history = [item, ...this.history].slice(0, MAX_HISTORY_ITEMS)
+      this.history = normalizeHistoryItems([item, ...this.history])
 
       return item
     },
 
+    exportHistoryToFile(): void {
+      if (this.history.length === 0) {
+        throw new Error('История расчетов пуста')
+      }
+
+      historyFileService.exportToJsonFile(this.history)
+    },
+
+    async importHistoryFromFile(
+      file: File,
+      mode: QueueHistoryImportMode = 'append',
+    ): Promise<QueueHistoryImportResult> {
+      const importedItems = await historyFileService.readJsonFile(file)
+      return this.importHistoryItems(importedItems, mode)
+    },
+
+    importHistoryItems(
+      items: QueueHistoryItem[],
+      mode: QueueHistoryImportMode = 'append',
+    ): QueueHistoryImportResult {
+      const existingIds = new Set(mode === 'append' ? this.history.map((item) => item.id) : [])
+      const uniqueItems = items.filter((item) => !existingIds.has(item.id))
+      const nextHistory = mode === 'replace' ? uniqueItems : [...uniqueItems, ...this.history]
+
+      this.history = normalizeHistoryItems(nextHistory)
+
+      if (this.history.length > 0) {
+        this.lastRequest = this.history[0].request
+        this.lastResult = this.history[0].response
+      } else {
+        this.lastRequest = null
+        this.lastResult = null
+      }
+
+      return {
+        totalCount: items.length,
+        importedCount: uniqueItems.length,
+        skippedCount: items.length - uniqueItems.length,
+      }
+    },
+
     removeHistoryItem(id: string): void {
       this.history = this.history.filter((item) => item.id !== id)
+
+      if (this.latestHistoryItem) {
+        this.lastRequest = this.latestHistoryItem.request
+        this.lastResult = this.latestHistoryItem.response
+      } else {
+        this.lastRequest = null
+        this.lastResult = null
+      }
     },
 
     clearHistory(): void {
