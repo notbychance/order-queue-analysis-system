@@ -1,67 +1,42 @@
 :root {
   color-scheme: light;
 
-  --app-bg: #f6f7fb;
-  --app-surface: #ffffff;
-  --app-surface-muted: #eef1f6;
-  --app-text: #172033;
-  --app-text-muted: #667085;
-  --app-border: #d7dce5;
-  --app-primary: #2563eb;
-  --app-primary-hover: #1d4ed8;
-  --app-danger: #dc2626;
-  --app-success: #16a34a;
-  --app-shadow: 0 12px 32px rgb(15 23 42 / 0.08);
+  --color-background: #f6f7fb;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f0f3f8;
+  --color-border: #e5e7eb;
+  --color-heading: #1f2937;
+  --color-text: #374151;
+  --color-text-muted: #6b7280;
+  --color-primary: #2080f0;
+  --color-primary-soft: rgba(32, 128, 240, 0.12);
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --app-bg: #101624;
-  --app-surface: #182033;
-  --app-surface-muted: #202a40;
-  --app-text: #eef2ff;
-  --app-text-muted: #aab4c8;
-  --app-border: #34405a;
-  --app-primary: #60a5fa;
-  --app-primary-hover: #93c5fd;
-  --app-danger: #f87171;
-  --app-success: #4ade80;
-  --app-shadow: 0 12px 32px rgb(0 0 0 / 0.28);
+  --color-background: #101014;
+  --color-surface: #18181c;
+  --color-surface-soft: #222228;
+  --color-border: #2f2f36;
+  --color-heading: #f3f4f6;
+  --color-text: #d1d5db;
+  --color-text-muted: #9ca3af;
+  --color-primary: #63a9ff;
+  --color-primary-soft: rgba(99, 169, 255, 0.16);
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
 }
 
 body {
-  min-height: 100vh;
   margin: 0;
-  background: var(--app-bg);
-  color: var(--app-text);
-}
-
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
-.theme-toggle {
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 12px;
-  color: var(--app-text);
-  cursor: pointer;
-  background: var(--app-surface);
-  border: 1px solid var(--app-border);
-  border-radius: 12px;
-  box-shadow: var(--app-shadow);
-}
-
-.theme-toggle:hover {
-  background: var(--app-surface-muted);
-}
-
-.theme-toggle__icon {
-  line-height: 1;
+  background: var(--color-background);
+  color: var(--color-text);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }

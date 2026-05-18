@@ -5,16 +5,13 @@ import { useThemeStore } from '@/stores/themeStore'
 
 const themeStore = useThemeStore()
 
-const buttonTitle = computed(() =>
-  themeStore.isDark ? 'Переключить на светлую тему' : 'Переключить на темную тему',
-)
+const buttonText = computed(() => {
+  return themeStore.theme === 'dark' ? 'Светлая тема' : 'Темная тема'
+})
 </script>
 
 <template>
-  <button class="theme-toggle" type="button" :title="buttonTitle" @click="themeStore.toggleTheme">
-    <span class="theme-toggle__icon" aria-hidden="true">
-      {{ themeStore.isDark ? '🌙' : '☀️' }}
-    </span>
-    <span>{{ themeStore.themeTitle }}</span>
-  </button>
+  <n-button secondary strong round @click="themeStore.toggleTheme">
+    {{ buttonText }}
+  </n-button>
 </template>
