@@ -1,9 +1,9 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
 
 import { queueApi } from '@/api/queueApi'
 import { historyFileService } from '@/services/historyFileService'
-import { useQueueAnalysisStore } from './queueAnalysisStore'
+import { useQueueAnalysisStore } from '@/stores/queueAnalysisStore'
 import {
   createQueueAnalysisRequest,
   createQueueFormulasResponse,
@@ -25,7 +25,7 @@ vi.mock('@/services/historyFileService', () => ({
   },
 }))
 
-describe('useQueueAnalysisStore', () => {
+describe('queueAnalysisStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
@@ -44,21 +44,24 @@ describe('useQueueAnalysisStore', () => {
     expect(store.lastRequest).toEqual(request)
     expect(store.lastResult).toEqual(response)
     expect(store.history).toHaveLength(1)
-    expect(store.history[0].request).toEqual(request)
-    expect(store.history[0].response).toEqual(response)
+    expect(store.history[0]).toMatchObject({
+      request,
+      response,
+    })
+    expect(store.history[0].id).toEqual(expect.any(String))
+    expect(Date.parse(store.history[0].createdAt)).not.toBeNaN()
     expect(store.isLoading).toBe(false)
     expect(store.errorMessage).toBeNull()
   })
 
-  it('stores API error message when analyze request fails', async () => {
-    vi.mocked(queueApi.analyzeQueue).mockRejectedValue(new Error('FastAPI недоступен'))
+  it('stores readable error when analyze request fails', async () => {
+    vi.mocked(queueApi.analyzeQueue).mockRejectedValue(new Error('Сервер недоступен'))
 
     const store = useQueueAnalysisStore()
 
-    await expect(store.analyzeQueue(createQueueAnalysisRequest())).rejects.toThrow(
-      'FastAPI недоступен',
-    )
-    expect(store.errorMessage).toBe('FastAPI недоступен')
+    await expect(store.analyzeQueue(createQueueAnalysisRequest())).rejects.toThrow('Сервер недоступен')
+
+    expect(store.errorMessage).toBe('Сервер недоступен')
     expect(store.isLoading).toBe(false)
     expect(store.history).toHaveLength(0)
   })
@@ -75,18 +78,19 @@ describe('useQueueAnalysisStore', () => {
     expect(store.isLoadingFormulas).toBe(false)
   })
 
-  it('repeats history item by id', async () => {
-    const historyItem = createQueueHistoryItem({ id: 'repeat-id' })
+  it('repeats existing history item by id', async () => {
+    const item = createQueueHistoryItem({ id: 'repeat-id' })
     const response = createStableQueueAnalysisResponse({ utilization_percent: 50 })
     vi.mocked(queueApi.analyzeQueue).mockResolvedValue(response)
 
     const store = useQueueAnalysisStore()
-    store.history = [historyItem]
+    store.history = [item]
 
     await store.repeatHistoryItem('repeat-id')
 
-    expect(queueApi.analyzeQueue).toHaveBeenCalledWith(historyItem.request)
+    expect(queueApi.analyzeQueue).toHaveBeenCalledWith(item.request)
     expect(store.history[0].response).toEqual(response)
+    expect(store.history).toHaveLength(2)
   })
 
   it('throws readable error when repeating unknown history item', async () => {
@@ -132,6 +136,22 @@ describe('useQueueAnalysisStore', () => {
     expect(store.history[0].id).toBe('new-id')
     expect(store.lastRequest).toEqual(newItem.request)
     expect(store.lastResult).toEqual(newItem.response)
+  })
+
+  it('limits history to latest 50 records', () => {
+    const items = Array.from({ length: 55 }, (_, index) =>
+      createQueueHistoryItem({
+        id: `item-${index}`,
+        createdAt: new Date(Date.UTC(2026, 0, index + 1)).toISOString(),
+      }),
+    )
+
+    const store = useQueueAnalysisStore()
+    const result = store.importHistoryItems(items, 'replace')
+
+    expect(result.totalCount).toBe(55)
+    expect(store.history).toHaveLength(50)
+    expect(store.history[0].id).toBe('item-54')
   })
 
   it('removes history item and resets last result when history becomes empty', () => {

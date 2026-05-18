@@ -1,146 +1,138 @@
-import { defineComponent, type PropType } from 'vue'
-
-const NButtonStub = defineComponent({
-  name: 'NButton',
-  props: {
-    disabled: Boolean,
-    loading: Boolean,
-    attrType: {
-      type: String,
-      default: 'button',
-    },
-  },
-  emits: ['click'],
-  template: `
-    <button
-      :type="attrType"
-      :disabled="disabled || loading"
-      @click="$emit('click')"
-    >
-      <slot />
-    </button>
-  `,
-})
-
-const NInputNumberStub = defineComponent({
-  name: 'NInputNumber',
-  props: {
-    value: {
-      type: Number as PropType<number | null>,
-      default: null,
-    },
-    placeholder: {
-      type: String,
-      default: '',
-    },
-  },
-  emits: ['update:value'],
-  setup(_, { emit }) {
-    function onInput(event: Event): void {
-      const input = event.target as HTMLInputElement
-      const nextValue = input.value.trim() === '' ? null : Number(input.value)
-      emit('update:value', nextValue)
-    }
-
-    return { onInput }
-  },
-  template: `
-    <label>
-      <input
-        type="number"
-        :placeholder="placeholder"
-        :value="value ?? ''"
-        @input="onInput"
-      />
-      <span><slot name="suffix" /></span>
-    </label>
-  `,
-})
-
-const NFormStub = defineComponent({
-  name: 'NForm',
-  template: '<form><slot /></form>',
-})
-
-const NCardStub = defineComponent({
-  name: 'NCard',
-  props: {
-    title: {
-      type: String,
-      default: '',
-    },
-  },
-  template: `
-    <section>
-      <h3 v-if="title">{{ title }}</h3>
-      <slot name="header-extra" />
-      <slot />
-    </section>
-  `,
-})
-
-const NAlertStub = defineComponent({
-  name: 'NAlert',
-  template: '<div role="alert"><slot /></div>',
-})
-
-const NEmptyStub = defineComponent({
-  name: 'NEmpty',
-  props: {
-    description: {
-      type: String,
-      default: '',
-    },
-  },
-  template: '<div>{{ description }}<slot /></div>',
-})
-
-const NResultStub = defineComponent({
-  name: 'NResult',
-  props: {
-    title: {
-      type: String,
-      default: '',
-    },
-    description: {
-      type: String,
-      default: '',
-    },
-  },
-  template: '<section><h2>{{ title }}</h2><p>{{ description }}</p><slot /></section>',
-})
-
-const NTagStub = defineComponent({
-  name: 'NTag',
-  template: '<span><slot /></span>',
-})
-
-const PassthroughStub = defineComponent({
-  name: 'PassthroughStub',
-  template: '<div><slot /></div>',
-})
-
 export const naiveStubs = {
-  NAlert: NAlertStub,
-  'n-alert': NAlertStub,
-  NButton: NButtonStub,
-  'n-button': NButtonStub,
-  NCard: NCardStub,
-  'n-card': NCardStub,
-  NEmpty: NEmptyStub,
-  'n-empty': NEmptyStub,
-  NForm: NFormStub,
-  'n-form': NFormStub,
-  NFormItem: PassthroughStub,
-  'n-form-item': PassthroughStub,
-  NGrid: PassthroughStub,
-  'n-grid': PassthroughStub,
-  NGridItem: PassthroughStub,
-  'n-grid-item': PassthroughStub,
-  NInputNumber: NInputNumberStub,
-  'n-input-number': NInputNumberStub,
-  NResult: NResultStub,
-  'n-result': NResultStub,
-  NTag: NTagStub,
-  'n-tag': NTagStub,
+  NAlert: {
+    props: ['type', 'showIcon', 'bordered'],
+    template: '<div class="n-alert"><slot /></div>',
+  },
+
+  NButton: {
+    props: ['type', 'attrType', 'loading', 'disabled', 'secondary', 'tertiary', 'strong', 'round', 'size'],
+    template: `
+      <button
+        class="n-button"
+        :type="attrType || 'button'"
+        :disabled="disabled || loading"
+      >
+        <slot />
+      </button>
+    `,
+  },
+
+  NCard: {
+    props: ['title', 'bordered', 'size', 'embedded'],
+    template: `
+      <section class="n-card">
+        <header v-if="title || $slots.header || $slots['header-extra']" class="n-card__header">
+          <slot name="header"><span>{{ title }}</span></slot>
+          <slot name="header-extra" />
+        </header>
+        <slot />
+      </section>
+    `,
+  },
+
+  NConfigProvider: {
+    props: ['theme'],
+    template: '<div class="n-config-provider"><slot /></div>',
+  },
+
+  NDialogProvider: {
+    template: '<div class="n-dialog-provider"><slot /></div>',
+  },
+
+  NEmpty: {
+    props: ['description', 'size'],
+    template: '<div class="n-empty">{{ description }}<slot /></div>',
+  },
+
+  NForm: {
+    template: '<form class="n-form"><slot /></form>',
+  },
+
+  NFormItem: {
+    props: ['label', 'path'],
+    template: '<label class="n-form-item"><span>{{ label }}</span><slot /></label>',
+  },
+
+  NGi: {
+    template: '<div class="n-gi"><slot /></div>',
+  },
+
+  NGrid: {
+    props: ['cols', 'xGap', 'yGap', 'itemResponsive', 'responsive'],
+    template: '<div class="n-grid"><slot /></div>',
+  },
+
+  NGridItem: {
+    template: '<div class="n-grid-item"><slot /></div>',
+  },
+
+  NInputNumber: {
+    props: ['value', 'min', 'precision', 'showButton', 'placeholder'],
+    emits: ['update:value'],
+    template: `
+      <label class="n-input-number-wrapper">
+        <input
+          class="n-input-number"
+          type="number"
+          :value="value ?? ''"
+          :placeholder="placeholder"
+          @input="$emit('update:value', $event.target.value === '' ? null : Number($event.target.value))"
+        />
+        <span class="n-input-number-suffix"><slot name="suffix" /></span>
+      </label>
+    `,
+  },
+
+  NLayout: {
+    props: ['position', 'hasSider'],
+    template: '<div class="n-layout"><slot /></div>',
+  },
+
+  NLayoutContent: {
+    template: '<main class="n-layout-content"><slot /></main>',
+  },
+
+  NLayoutHeader: {
+    props: ['bordered'],
+    template: '<header class="n-layout-header"><slot /></header>',
+  },
+
+  NLayoutSider: {
+    props: ['bordered', 'collapseMode', 'collapsedWidth', 'width', 'showTrigger'],
+    template: '<aside class="n-layout-sider"><slot /></aside>',
+  },
+
+  NMessageProvider: {
+    template: '<div class="n-message-provider"><slot /></div>',
+  },
+
+  NRadioButton: {
+    props: ['value'],
+    template: '<label class="n-radio-button"><slot /></label>',
+  },
+
+  NRadioGroup: {
+    props: ['value', 'name', 'size'],
+    emits: ['update:value'],
+    template: '<div class="n-radio-group"><slot /></div>',
+  },
+
+  NScrollbar: {
+    template: '<div class="n-scrollbar"><slot /></div>',
+  },
+
+  NSpace: {
+    props: ['vertical', 'size', 'wrap'],
+    template: '<div class="n-space"><slot /></div>',
+  },
+
+  NSpin: {
+    props: ['show'],
+    template: '<div class="n-spin"><slot /></div>',
+  },
+
+  NTag: {
+    props: ['type', 'round', 'size'],
+    template: '<span class="n-tag"><slot /></span>',
+  },
 }

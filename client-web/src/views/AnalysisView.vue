@@ -40,7 +40,10 @@ function resetResult(): void {
       </n-grid-item>
 
       <n-grid-item>
-        <QueueAnalysisResult :result="result" />
+        <QueueAnalysisResult v-if="result" :result="result" />
+        <n-card v-else title="Результат анализа">
+          <n-empty description="Введите параметры системы и выполните расчет" />
+        </n-card>
       </n-grid-item>
     </n-grid>
   </section>

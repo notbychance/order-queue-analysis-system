@@ -1,30 +1,32 @@
 import { describe, expect, it } from 'vitest'
 
-import { historyFileService } from './historyFileService'
+import { historyFileService } from '@/services/historyFileService'
 import { createQueueHistoryItem } from '@/test/factories'
 
 describe('historyFileService', () => {
-  it('builds export payload for local history', () => {
+  it('builds export file with metadata and items', () => {
     const item = createQueueHistoryItem()
-    const payload = historyFileService.buildExportFile([item])
+    const exportFile = historyFileService.buildExportFile([item])
 
-    expect(payload.schemaVersion).toBe(1)
-    expect(payload.source).toBe('queue-analysis-web')
-    expect(payload.items).toEqual([item])
-    expect(Date.parse(payload.exportedAt)).not.toBeNaN()
+    expect(exportFile.schemaVersion).toBe(1)
+    expect(exportFile.source).toBe('queue-analysis-web')
+    expect(Date.parse(exportFile.exportedAt)).not.toBeNaN()
+    expect(exportFile.items).toEqual([item])
   })
 
-  it('reads valid history from JSON file with items wrapper', async () => {
+  it('reads history from exported JSON file', async () => {
     const item = createQueueHistoryItem()
-    const file = new File([JSON.stringify({ items: [item] })], 'history.json', {
-      type: 'application/json',
-    })
+    const file = new File(
+      [JSON.stringify({ schemaVersion: 1, source: 'queue-analysis-web', items: [item] })],
+      'history.json',
+      { type: 'application/json' },
+    )
 
     await expect(historyFileService.readJsonFile(file)).resolves.toEqual([item])
   })
 
-  it('reads valid history from plain array JSON file', async () => {
-    const item = createQueueHistoryItem({ id: 'history-array-item' })
+  it('reads history from plain array JSON file', async () => {
+    const item = createQueueHistoryItem()
     const file = new File([JSON.stringify([item])], 'history.json', {
       type: 'application/json',
     })
@@ -40,13 +42,13 @@ describe('historyFileService', () => {
     )
   })
 
-  it('rejects empty json files', async () => {
-    const file = new File(['  '], 'history.json', { type: 'application/json' })
+  it('rejects empty JSON files', async () => {
+    const file = new File(['   '], 'history.json', { type: 'application/json' })
 
     await expect(historyFileService.readJsonFile(file)).rejects.toThrow('Файл истории пуст')
   })
 
-  it('rejects invalid json', async () => {
+  it('rejects invalid JSON', async () => {
     const file = new File(['{bad json'], 'history.json', { type: 'application/json' })
 
     await expect(historyFileService.readJsonFile(file)).rejects.toThrow(
@@ -54,7 +56,7 @@ describe('historyFileService', () => {
     )
   })
 
-  it('rejects json without valid history items', async () => {
+  it('rejects JSON without valid history items', async () => {
     const file = new File([JSON.stringify({ items: [{ id: '' }] })], 'history.json', {
       type: 'application/json',
     })

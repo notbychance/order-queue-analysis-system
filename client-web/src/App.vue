@@ -13,7 +13,7 @@ const queueStore = useQueueAnalysisStore()
 const themeStore = useThemeStore()
 
 const naiveTheme = computed<GlobalTheme | null>(() => {
-  return themeStore.theme === 'dark' ? darkTheme : null
+  return themeStore.isDark ? darkTheme : null
 })
 
 const lastHistoryItems = computed(() => queueStore.history.slice(0, 5))

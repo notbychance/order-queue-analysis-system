@@ -2,13 +2,14 @@ import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import ThemeToggle from './ThemeToggle.vue'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 import { useThemeStore } from '@/stores/themeStore'
 import { naiveStubs } from '@/test/naiveStubs'
 
 function mockMatchMedia(matches: boolean): void {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
+    configurable: true,
     value: vi.fn().mockImplementation((query: string) => ({
       matches,
       media: query,
@@ -25,6 +26,7 @@ function mockMatchMedia(matches: boolean): void {
 describe('ThemeToggle', () => {
   beforeEach(() => {
     localStorage.clear()
+    document.documentElement.removeAttribute('data-theme')
     mockMatchMedia(false)
     setActivePinia(createPinia())
   })
@@ -37,11 +39,13 @@ describe('ThemeToggle', () => {
     })
     const themeStore = useThemeStore()
 
+    expect(themeStore.mode).toBe('light')
     expect(wrapper.text()).toContain('Темная тема')
 
     await wrapper.find('button').trigger('click')
 
     expect(themeStore.mode).toBe('dark')
+    expect(document.documentElement.dataset.theme).toBe('dark')
     expect(wrapper.text()).toContain('Светлая тема')
   })
 })
