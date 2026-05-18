@@ -6,7 +6,7 @@ import { useThemeStore } from '@/stores/themeStore'
 const themeStore = useThemeStore()
 
 const buttonText = computed(() => {
-  return themeStore.theme === 'dark' ? 'Светлая тема' : 'Темная тема'
+  return themeStore.isDark ? 'Светлая тема' : 'Темная тема'
 })
 </script>
 
