@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from PySide6.QtCore import Property, QObject, Signal, Slot
+from PySide6.QtCore import Property, QObject, QThread, Signal, Slot
 
 from app.api.errors import QueueApiConnectionError, QueueApiError, QueueApiResponseError
 from app.schemas.history import HistoryCreate, HistoryItem
@@ -19,15 +19,59 @@ class HistoryServiceProtocol(Protocol):
         ...
 
 
+class AnalysisWorker(QObject):
+    """Worker для выполнения HTTP-запроса и сохранения истории вне UI-потока."""
+
+    succeeded = Signal(object)
+    failed = Signal(str)
+
+    def __init__(
+        self,
+        api_client: QueueApiClientProtocol,
+        history_service: HistoryServiceProtocol,
+        request: QueueAnalysisRequest,
+        parent: QObject | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self._api_client = api_client
+        self._history_service = history_service
+        self._request = request
+
+    @Slot()
+    def run(self) -> None:
+        try:
+            result = self._api_client.analyze_queue(self._request)
+
+            self._history_service.add_history_item(
+                AnalysisViewModel.history_create_from_response(result)
+            )
+
+            self.succeeded.emit(result)
+        except QueueApiConnectionError:
+            self.failed.emit(
+                "Не удалось подключиться к FastAPI-серверу. "
+                "Проверьте, что сервер запущен."
+            )
+        except QueueApiResponseError as exc:
+            self.failed.emit(f"Сервер вернул ошибку: {exc}")
+        except QueueApiError as exc:
+            self.failed.emit(f"Ошибка API-клиента: {exc}")
+        except Exception as exc:
+            self.failed.emit(f"Не удалось выполнить анализ: {exc}")
+
+
 class AnalysisViewModel(QObject):
     """ViewModel страницы анализа для QML.
 
     QML не обращается напрямую ни к FastAPI, ни к SQLAlchemy.
     Он вызывает методы этой ViewModel, а она:
     1. валидирует введенные параметры;
-    2. отправляет запрос на FastAPI;
-    3. сохраняет результат в локальную SQLite-историю;
+    2. запускает анализ в отдельном QThread;
+    3. получает результат анализа;
     4. отдает QML готовые свойства для отображения.
+
+    HTTP-запрос к FastAPI и сохранение истории выполняются не в UI-потоке,
+    поэтому окно приложения не зависает на время запроса.
     """
 
     loadingChanged = Signal()
@@ -47,6 +91,9 @@ class AnalysisViewModel(QObject):
         self._is_loading = False
         self._error_message = ""
         self._result: QueueAnalysisResponse | None = None
+
+        self._worker_thread: QThread | None = None
+        self._worker: AnalysisWorker | None = None
 
     @Property(bool, notify=loadingChanged)
     def isLoading(self) -> bool:
@@ -130,6 +177,9 @@ class AnalysisViewModel(QObject):
 
     @Slot(str, str)
     def analyze(self, lambda_rate_text: str, mu_rate_text: str) -> None:
+        if self._is_loading:
+            return
+
         self._clear_error()
 
         try:
@@ -141,36 +191,66 @@ class AnalysisViewModel(QObject):
             self._set_error(str(exc))
             return
 
-        self._set_loading(True)
-
-        try:
-            result = self._api_client.analyze_queue(request)
-            self._result = result
-
-            self._history_service.add_history_item(
-                self._history_create_from_response(result)
-            )
-
-            self.resultChanged.emit()
-        except QueueApiConnectionError:
-            self._set_error(
-                "Не удалось подключиться к FastAPI-серверу. "
-                "Проверьте, что сервер запущен."
-            )
-        except QueueApiResponseError as exc:
-            self._set_error(f"Сервер вернул ошибку: {exc}")
-        except QueueApiError as exc:
-            self._set_error(f"Ошибка API-клиента: {exc}")
-        except Exception as exc:
-            self._set_error(f"Не удалось выполнить анализ: {exc}")
-        finally:
-            self._set_loading(False)
+        self._start_worker(request)
 
     @Slot()
     def clearResult(self) -> None:
+        if self._is_loading:
+            return
+
         self._clear_error()
         self._result = None
         self.resultChanged.emit()
+
+    def _start_worker(self, request: QueueAnalysisRequest) -> None:
+        self._set_loading(True)
+
+        thread = QThread(self)
+        worker = AnalysisWorker(
+            api_client=self._api_client,
+            history_service=self._history_service,
+            request=request,
+        )
+
+        worker.moveToThread(thread)
+
+        thread.started.connect(worker.run)
+
+        worker.succeeded.connect(self._handle_worker_success)
+        worker.failed.connect(self._handle_worker_failure)
+
+        worker.succeeded.connect(thread.quit)
+        worker.failed.connect(thread.quit)
+
+        worker.succeeded.connect(worker.deleteLater)
+        worker.failed.connect(worker.deleteLater)
+
+        thread.finished.connect(thread.deleteLater)
+        thread.finished.connect(self._handle_worker_finished)
+
+        self._worker_thread = thread
+        self._worker = worker
+
+        thread.start()
+
+    @Slot(object)
+    def _handle_worker_success(self, result: object) -> None:
+        if not isinstance(result, QueueAnalysisResponse):
+            self._set_error("Сервер вернул результат в неизвестном формате.")
+            return
+
+        self._result = result
+        self.resultChanged.emit()
+
+    @Slot(str)
+    def _handle_worker_failure(self, message: str) -> None:
+        self._set_error(message)
+
+    @Slot()
+    def _handle_worker_finished(self) -> None:
+        self._worker_thread = None
+        self._worker = None
+        self._set_loading(False)
 
     def _set_loading(self, value: bool) -> None:
         if self._is_loading == value:
@@ -210,7 +290,7 @@ class AnalysisViewModel(QObject):
         return parsed
 
     @staticmethod
-    def _history_create_from_response(
+    def history_create_from_response(
         response: QueueAnalysisResponse,
     ) -> HistoryCreate:
         return HistoryCreate(

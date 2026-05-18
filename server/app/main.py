@@ -10,8 +10,22 @@ settings = get_settings()
 
 app = FastAPI(
     title=settings.app_name,
+    description=(
+        "API для анализа одноканальной системы массового обслуживания M/M/1. "
+        "Сервер выполняет расчет показателей системы, но не хранит историю расчетов."
+    ),
     version="0.1.0",
     debug=settings.debug,
+    openapi_tags=[
+        {
+            "name": "system",
+            "description": "Служебные endpoint-ы состояния сервера.",
+        },
+        {
+            "name": "queue-analysis",
+            "description": "Анализ системы массового обслуживания M/M/1.",
+        },
+    ],
 )
 
 
