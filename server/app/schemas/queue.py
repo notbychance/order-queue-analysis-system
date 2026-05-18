@@ -63,3 +63,10 @@ class QueueAnalysisResponse(BaseModel):
 
     message: str = Field(description="Краткое техническое сообщение о результате расчета")
     conclusion: str = Field(description="Человекочитаемое заключение для отображения в клиентах")
+
+
+class QueueFormulasResponse(BaseModel):
+    model_name: str = Field(description="Название модели массового обслуживания")
+    description: str = Field(description="Описание модели")
+    stability_condition: str = Field(description="Условие устойчивости системы")
+    formulas: dict[str, str] = Field(description="Список используемых формул")

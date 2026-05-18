@@ -30,11 +30,23 @@ class Settings(BaseSettings):
             "http://127.0.0.1:8080"
         )
     )
+    cors_allow_credentials: bool = Field(default=False)
 
     log_level: str = Field(default="INFO")
 
     @property
+    def is_development(self) -> bool:
+        return self.app_env.lower() in {"development", "develop", "dev", "local"}
+
+    @property
+    def is_publish(self) -> bool:
+        return self.app_env.lower() in {"publish", "production", "prod", "release"}
+
+    @property
     def cors_origin_list(self) -> list[str]:
+        if self.is_development:
+            return ["*"]
+
         return [
             origin.strip()
             for origin in self.cors_origins.split(",")
@@ -42,8 +54,15 @@ class Settings(BaseSettings):
         ]
 
     @property
-    def is_development(self) -> bool:
-        return self.app_env.lower() == "development"
+    def cors_allow_credentials_effective(self) -> bool:
+        """
+        Browsers do not allow wildcard CORS origins together with credentials.
+        In development mode we allow all origins, so credentials must be disabled.
+        """
+        if "*" in self.cors_origin_list:
+            return False
+
+        return self.cors_allow_credentials
 
 
 @lru_cache

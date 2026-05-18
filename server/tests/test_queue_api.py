@@ -14,13 +14,23 @@ def test_health_check() -> None:
     assert response.json()["status"] == "ok"
 
 
-def test_get_default_queue_params() -> None:
+def test_get_default_queue_params_endpoint_is_removed() -> None:
     response = client.get("/api/v1/queue/default")
+
+    assert response.status_code == 404
+
+
+def test_get_queue_formulas() -> None:
+    response = client.get("/api/v1/queue/formulas")
 
     assert response.status_code == 200
     data = response.json()
-    assert data["lambda_rate"] == 6
-    assert data["mu_rate"] == 8
+    assert data["model_name"] == "M/M/1"
+    assert data["stability_condition"] == "λ < μ"
+    assert data["formulas"]["rho"] == "ρ = λ / μ"
+    assert "average_orders_in_system" in data["formulas"]
+    assert "average_waiting_time" in data["formulas"]
+    assert "average_time_in_system" in data["formulas"]
 
 
 def test_analyze_queue_endpoint_returns_expected_result() -> None:
