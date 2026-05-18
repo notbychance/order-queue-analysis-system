@@ -1,6 +1,4 @@
-# Runtime dependencies for the PySide6 + QML/Qt Quick desktop client.
-# Python: 3.11+
-
-PySide6>=6.8,<7.0
-httpx>=0.27,<1.0
-pydantic>=2.10,<3.0
+PySide6
+httpx
+pydantic
+SQLAlchemy
