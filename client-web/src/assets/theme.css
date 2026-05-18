@@ -1,0 +1,67 @@
+:root {
+  color-scheme: light;
+
+  --app-bg: #f6f7fb;
+  --app-surface: #ffffff;
+  --app-surface-muted: #eef1f6;
+  --app-text: #172033;
+  --app-text-muted: #667085;
+  --app-border: #d7dce5;
+  --app-primary: #2563eb;
+  --app-primary-hover: #1d4ed8;
+  --app-danger: #dc2626;
+  --app-success: #16a34a;
+  --app-shadow: 0 12px 32px rgb(15 23 42 / 0.08);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --app-bg: #101624;
+  --app-surface: #182033;
+  --app-surface-muted: #202a40;
+  --app-text: #eef2ff;
+  --app-text-muted: #aab4c8;
+  --app-border: #34405a;
+  --app-primary: #60a5fa;
+  --app-primary-hover: #93c5fd;
+  --app-danger: #f87171;
+  --app-success: #4ade80;
+  --app-shadow: 0 12px 32px rgb(0 0 0 / 0.28);
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  color: var(--app-text);
+  cursor: pointer;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  box-shadow: var(--app-shadow);
+}
+
+.theme-toggle:hover {
+  background: var(--app-surface-muted);
+}
+
+.theme-toggle__icon {
+  line-height: 1;
+}
