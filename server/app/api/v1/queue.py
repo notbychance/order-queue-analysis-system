@@ -5,7 +5,7 @@ from app.schemas.queue import (
     QueueAnalysisResponse,
     QueueFormulasResponse,
 )
-from app.services.queue_analysis import analyze_queue_system
+from app.services.queue_analysis import analyze_queue as analyze_queue_service
 
 
 router = APIRouter(
@@ -94,7 +94,7 @@ router = APIRouter(
 def analyze_queue(
     request: QueueAnalysisRequest,
 ) -> QueueAnalysisResponse:
-    return analyze_queue_system(request)
+    return analyze_queue_service(request)
 
 
 @router.get(

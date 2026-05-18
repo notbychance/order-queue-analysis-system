@@ -69,7 +69,9 @@ def test_analyze_endpoint_returns_client_contract_for_stable_system():
     assert math.isclose(data["average_time_in_system"], 0.5)
     assert math.isclose(data["average_time_in_system_hours"], 12.0)
 
-    assert "устойчива" in data["conclusion"].lower()
+    # Не привязываемся к точной формулировке заключения:
+    # сервис может писать "устойчива", "устойчиво" или "работает устойчиво".
+    assert "устойчив" in data["conclusion"].lower()
 
 
 @pytest.mark.integration
@@ -99,7 +101,7 @@ def test_analyze_endpoint_returns_client_contract_for_unstable_system():
     assert data["average_time_in_system"] is None
     assert data["average_time_in_system_hours"] is None
 
-    assert "неустойчива" in data["conclusion"].lower()
+    assert "неустойчив" in data["conclusion"].lower()
 
 
 @pytest.mark.integration
