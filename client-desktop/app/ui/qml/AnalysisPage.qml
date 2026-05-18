@@ -22,7 +22,6 @@ Page {
         target: analysisViewModel
 
         function onResultChanged() {
-            sensitivityChart.requestPaint()
             historyViewModel.loadHistory()
         }
     }
@@ -253,7 +252,7 @@ Page {
                 Layout.fillWidth: true
                 Layout.leftMargin: 28
                 Layout.rightMargin: 28
-                Layout.preferredHeight: 300
+                Layout.preferredHeight: 390
                 radius: 22
                 color: root.paletteObject.surface
                 border.color: root.paletteObject.border
@@ -261,7 +260,7 @@ Page {
                 ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: 22
-                    spacing: 10
+                    spacing: 14
 
                     Text {
                         text: "График чувствительности"
@@ -272,92 +271,19 @@ Page {
 
                     Text {
                         Layout.fillWidth: true
-                        text: "Зависимость среднего числа заказов L от λ при текущем μ."
+                        text: "Переключайте показатель, чтобы увидеть, как очередь и время ожидания изменяются при росте интенсивности поступления заказов."
                         color: root.paletteObject.mutedText
                         font.pixelSize: 12
+                        wrapMode: Text.WordWrap
                     }
 
-                    Canvas {
-                        id: sensitivityChart
-
+                    SensitivityChart {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-
-                        onPaint: {
-                            const ctx = getContext("2d")
-                            ctx.reset()
-
-                            const w = width
-                            const h = height
-                            const pad = 38
-
-                            ctx.fillStyle = root.paletteObject.surfaceMuted
-                            ctx.fillRect(0, 0, w, h)
-
-                            ctx.strokeStyle = root.paletteObject.border
-                            ctx.lineWidth = 1
-                            ctx.beginPath()
-                            ctx.moveTo(pad, pad)
-                            ctx.lineTo(pad, h - pad)
-                            ctx.lineTo(w - pad, h - pad)
-                            ctx.stroke()
-
-                            if (!analysisViewModel.hasResult || analysisViewModel.muRate <= 0) {
-                                ctx.fillStyle = root.paletteObject.mutedText
-                                ctx.font = "14px sans-serif"
-                                ctx.textAlign = "center"
-                                ctx.fillText("Выполните расчет, чтобы построить график", w / 2, h / 2)
-                                return
-                            }
-
-                            const mu = analysisViewModel.muRate
-                            const maxLambda = mu * 0.95
-                            const points = []
-
-                            for (let i = 0; i <= 40; i++) {
-                                const lambdaValue = maxLambda * i / 40
-                                const lValue = lambdaValue / (mu - lambdaValue)
-                                points.push({ lambdaValue, lValue })
-                            }
-
-                            const maxY = Math.max(...points.map(p => p.lValue), 1)
-
-                            ctx.strokeStyle = root.paletteObject.primary
-                            ctx.lineWidth = 3
-                            ctx.beginPath()
-
-                            for (let i = 0; i < points.length; i++) {
-                                const p = points[i]
-                                const x = pad + (p.lambdaValue / maxLambda) * (w - pad * 2)
-                                const y = h - pad - (p.lValue / maxY) * (h - pad * 2)
-
-                                if (i === 0) {
-                                    ctx.moveTo(x, y)
-                                } else {
-                                    ctx.lineTo(x, y)
-                                }
-                            }
-
-                            ctx.stroke()
-
-                            if (analysisViewModel.lambdaRate < mu) {
-                                const currentL = analysisViewModel.lambdaRate / (mu - analysisViewModel.lambdaRate)
-                                const currentX = pad + (analysisViewModel.lambdaRate / maxLambda) * (w - pad * 2)
-                                const currentY = h - pad - (currentL / maxY) * (h - pad * 2)
-
-                                ctx.fillStyle = root.paletteObject.danger
-                                ctx.beginPath()
-                                ctx.arc(currentX, currentY, 6, 0, Math.PI * 2)
-                                ctx.fill()
-                            }
-
-                            ctx.fillStyle = root.paletteObject.mutedText
-                            ctx.font = "12px sans-serif"
-                            ctx.textAlign = "left"
-                            ctx.fillText("L", 12, pad)
-                            ctx.textAlign = "right"
-                            ctx.fillText("λ", w - 14, h - 10)
-                        }
+                        paletteObject: root.paletteObject
+                        hasResult: analysisViewModel.hasResult
+                        lambdaRate: analysisViewModel.lambdaRate
+                        muRate: analysisViewModel.muRate
                     }
                 }
             }
