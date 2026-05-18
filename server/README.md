@@ -11,6 +11,27 @@ client-web     → Pinia/localStorage
 client-desktop → SQLite через SQLAlchemy ORM
 ```
 
+## Зависимости
+
+Зависимости разделены на runtime и development/test:
+
+```text
+requirements.txt      зависимости обычного запуска API
+requirements-dev.txt  зависимости тестов и разработки
+```
+
+Для запуска сервера достаточно:
+
+```bash
+pip install -r requirements.txt
+```
+
+Для разработки и тестов:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
 ## Основные возможности
 
 - расчет характеристик модели M/M/1;
@@ -39,6 +60,7 @@ server/
 ├── Dockerfile
 ├── pytest.ini
 ├── requirements.txt
+├── requirements-dev.txt
 └── README.md
 ```
 
@@ -71,25 +93,6 @@ CORS_ALLOW_CREDENTIALS=false
 LOG_LEVEL=INFO
 ```
 
-## CORS
-
-В development-режиме:
-
-```env
-APP_ENV=development
-```
-
-сервер разрешает запросы со всех origins.
-
-В publish-режиме:
-
-```env
-APP_ENV=publish
-CORS_ORIGINS=https://example.com,https://www.example.com
-```
-
-сервер разрешает запросы только с адресов из `CORS_ORIGINS`.
-
 ## Локальный запуск
 
 ```bash
@@ -103,7 +106,7 @@ Windows PowerShell:
 .venv\Scripts\Activate.ps1
 ```
 
-Установка зависимостей:
+Установка runtime-зависимостей:
 
 ```bash
 pip install -r requirements.txt
@@ -122,6 +125,23 @@ http://localhost:8000/health
 http://localhost:8000/docs
 ```
 
+## Тестирование
+
+Для тестов установи dev-зависимости:
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+Тесты покрывают:
+
+- расчетный сервис;
+- FastAPI endpoint-ы;
+- CORS-конфигурацию;
+- актуальный контракт ответа для клиентов;
+- интеграционные проверки API-контракта.
+
 ## API endpoint-ы
 
 ```text
@@ -132,86 +152,12 @@ GET  /api/v1/queue/formulas
 
 Endpoint `/api/v1/queue/default` не используется.
 
-### GET /health
-
-```json
-{
-  "status": "ok",
-  "service": "Queue Analysis API",
-  "environment": "development"
-}
-```
-
-### POST /api/v1/queue/analyze
-
-Запрос:
-
-```json
-{
-  "lambda_rate": 6,
-  "mu_rate": 8
-}
-```
-
-Ответ:
-
-```json
-{
-  "lambda_rate": 6.0,
-  "mu_rate": 8.0,
-  "arrival_rate_unit": "заказов/день",
-  "service_rate_unit": "заказов/день",
-  "time_unit": "дней",
-  "is_stable": true,
-  "utilization": 0.75,
-  "utilization_percent": 75.0,
-  "average_orders_in_system": 3.0,
-  "average_waiting_time": 0.375,
-  "average_waiting_time_hours": 9.0,
-  "average_time_in_system": 0.5,
-  "average_time_in_system_hours": 12.0,
-  "conclusion": "Система устойчива. Клерк загружен на 75.0%. Очередь не растет неограниченно."
-}
-```
-
-Для неустойчивой системы `average_*` поля возвращаются как `null`.
-
-### GET /api/v1/queue/formulas
-
-```json
-{
-  "model_name": "M/M/1",
-  "description": "Одноканальная система массового обслуживания с пуассоновским потоком заявок и экспоненциальным временем обслуживания.",
-  "stability_condition": "λ < μ",
-  "formulas": {
-    "utilization": "ρ = λ / μ",
-    "average_orders_in_system": "L = λ / (μ - λ)",
-    "average_waiting_time": "Wq = λ / (μ * (μ - λ))",
-    "average_time_in_system": "W = 1 / (μ - λ)"
-  }
-}
-```
-
-## Тестирование
-
-```bash
-cd server
-pytest
-```
-
-Тесты покрывают:
-
-- расчетный сервис;
-- FastAPI endpoint-ы;
-- CORS-конфигурацию;
-- актуальный контракт ответа для клиентов.
-
 ## Docker
 
-Сборка из папки `server`:
+Production-like сборка сервера использует только `requirements.txt`.
 
 ```bash
-docker build -t queue-analysis-server .
+docker build --target runtime -t queue-analysis-server .
 ```
 
 Запуск:
@@ -220,7 +166,19 @@ docker build -t queue-analysis-server .
 docker run --rm -p 8000:8000 --env-file .env queue-analysis-server
 ```
 
-При запуске через `docker compose` из корня проекта сервер использует `server/.env`.
+Тестовая сборка использует `requirements-dev.txt`:
+
+```bash
+docker build --target test -t queue-analysis-server-tests .
+docker run --rm queue-analysis-server-tests
+```
+
+При запуске через `docker compose` из корня проекта targets выбираются автоматически:
+
+```bash
+docker compose up --build
+docker compose --profile test up --build --abort-on-container-exit
+```
 
 ## Важные ограничения
 

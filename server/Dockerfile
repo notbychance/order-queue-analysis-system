@@ -1,4 +1,4 @@
-FROM python:3.14-slim
+FROM python:3.12-slim AS base
 
 WORKDIR /app
 
@@ -12,13 +12,35 @@ COPY requirements.txt ./
 RUN pip install --upgrade pip \
     && pip install -r requirements.txt
 
+RUN groupadd --system appuser \
+    && useradd --system --gid appuser --home-dir /app appuser \
+    && chown -R appuser:appuser /app
+
+
+FROM base AS test
+
+USER root
+
+COPY requirements-dev.txt ./
+
+RUN pip install -r requirements-dev.txt
+
 COPY app ./app
 COPY tests ./tests
 COPY pytest.ini ./pytest.ini
 
-RUN groupadd --system appuser \
-    && useradd --system --gid appuser --home-dir /app appuser \
-    && chown -R appuser:appuser /app
+RUN chown -R appuser:appuser /app
+
+USER appuser
+
+CMD ["pytest"]
+
+
+FROM base AS runtime
+
+COPY app ./app
+
+RUN chown -R appuser:appuser /app
 
 USER appuser
 

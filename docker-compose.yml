@@ -5,6 +5,7 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile
+      target: runtime
     container_name: queue-analysis-server
     environment:
       APP_NAME: ${SERVER_APP_NAME:-Queue Analysis API}
@@ -70,6 +71,7 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile
+      target: test
     container_name: queue-analysis-server-tests
     command: ["pytest"]
     environment:
